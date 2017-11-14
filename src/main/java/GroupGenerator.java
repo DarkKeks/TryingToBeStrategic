@@ -1,38 +1,71 @@
+import javafx.util.Pair;
 import model.Vehicle;
 import model.VehicleType;
 
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class GroupGenerator {
+
+    VehicleType surfaceTypes[] = {VehicleType.TANK, VehicleType.IFV, VehicleType.ARRV};
+    VehicleType skyTypes[] = {VehicleType.HELICOPTER, VehicleType.FIGHTER};
 
     public MyStrategy strategy;
 
     public GroupGenerator(MyStrategy strategy) {
         this.strategy = strategy;
+
+        strategy.movementManager.add(new MyMove()
+                .clearAndSelect(VehicleType.FIGHTER)
+                .next(new MyMove().scale(0, 0, 2)));
+
         initGroups();
     }
 
     public void initGroups() {
-        VehicleType surfaceTypes[] = {VehicleType.TANK, VehicleType.IFV, VehicleType.ARRV};
-        VehicleType skyTypes[] = {VehicleType.HELICOPTER, VehicleType.FIGHTER};
-
-        VehicleType posSurface[][] = new VehicleType[3][3];
-        VehicleType posSky[][] = new VehicleType[3][3];
+        Map<VehicleType, Pair<Integer, Integer>> surface = new HashMap<>();
+        Map<VehicleType, Pair<Integer, Integer>> sky = new HashMap<>();
 
         for(VehicleType type : surfaceTypes) {
             Point point = getCornerPointOfType(type);
-            posSurface[point.x][point.y] = type;
+            surface.put(type, new Pair<>(point.x, point.y));
         }
 
         for(VehicleType type : skyTypes) {
             Point point = getCornerPointOfType(type);
-            posSky[point.x][point.y] = type;
+            sky.put(type, new Pair<>(point.x, point.y));
         }
 
-        addMoves(posSurface, posSky);
+        addMoves(surface, sky);
     }
 
-    private void addMoves(VehicleType[][] posSurface, VehicleType[][] posSky) {
+    private void addMoves(Map<VehicleType, Pair<Integer, Integer>> surface,
+                          Map<VehicleType, Pair<Integer, Integer>> sky) {
+        ArrayList<MyMove> moves = new ArrayList<>();
+
+        boolean two = false, three = false;
+
+        int cnt[] = new int[3];
+        for(VehicleType type : surfaceTypes) {
+            int y = surface.get(type).getValue();
+            cnt[y]++;
+            if(cnt[y] == 3) three = true;
+            if(cnt[y] == 2) two = true;
+        }
+
+        if(!two) {
+            int i = 0;
+            for(VehicleType type : surfaceTypes) {
+                moves.add(new MyMove()
+                        .clearAndSelect(type)
+                        .next(new MyMove()
+                                .move(Util.getCoordByIdx(i++),
+                                        Util.getCoordByIdx(surface.get(type).getValue()))));
+            }
+        }
+
     }
 
     public Point getCornerPointOfType(VehicleType type) {

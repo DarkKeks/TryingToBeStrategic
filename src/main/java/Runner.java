@@ -1,6 +1,7 @@
 import model.*;
 
 import java.io.IOException;
+import java.util.Locale;
 
 public final class Runner {
     private final RemoteProcessClient remoteProcessClient;
@@ -17,11 +18,15 @@ public final class Runner {
 
     @SuppressWarnings("WeakerAccess")
     public void run() throws IOException {
+        Locale.setDefault(Locale.US);
         try {
             remoteProcessClient.writeTokenMessage(token);
             remoteProcessClient.writeProtocolVersionMessage();
             remoteProcessClient.readTeamSizeMessage();
             Game game = remoteProcessClient.readGameContextMessage();
+
+            RewindClient.getInstance().message("Hello World");
+            RewindClient.getInstance().endFrame();
 
             Strategy strategy = new MyStrategy();
 
@@ -33,11 +38,20 @@ public final class Runner {
                     break;
                 }
 
+                RewindClient.getInstance().message("Step " + playerContext.getWorld().getTickIndex());
+
                 Move move = new Move();
                 strategy.move(player, playerContext.getWorld(), game, move);
 
+                RewindClient.getInstance().endFrame();
+
                 remoteProcessClient.writeMoveMessage(move);
             }
+
+            RewindClient.getInstance().message("Bye!");
+            RewindClient.getInstance().endFrame();
+            RewindClient.getInstance().close();
+
         } finally {
             remoteProcessClient.close();
         }

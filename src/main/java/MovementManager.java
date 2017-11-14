@@ -1,9 +1,4 @@
-import model.Move;
-
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Queue;
-import java.util.function.Consumer;
+import java.util.*;
 
 public class MovementManager {
     public static Deque<Integer> movements = new ArrayDeque<>();
@@ -13,12 +8,16 @@ public class MovementManager {
         }
     }
 
-    public Queue<Consumer<MyMove>> delayedMoves = new ArrayDeque<>();
+    public Set<MyMove> delayedMoves = new HashSet<>();
 
     public MyStrategy strategy;
 
     public MovementManager(MyStrategy strategy) {
         this.strategy = strategy;
+    }
+
+    public void add(MyMove move) {
+        delayedMoves.add(move);
     }
 
     public boolean canMove() {
@@ -27,7 +26,17 @@ public class MovementManager {
 
     public void move() {
         if(canMove()) {
-
+            for(MyMove myMove : delayedMoves) {
+                if(myMove.canBeApplied()) {
+                    myMove.apply(strategy.move);
+                    if(!myMove.hasNext) delayedMoves.remove(myMove);
+                    return;
+                } else if(myMove.hasNext && myMove.canDoNext()) {
+                    delayedMoves.add(myMove.next);
+                    delayedMoves.remove(myMove);
+                    return;
+                }
+            }
         }
     }
 
@@ -37,6 +46,6 @@ public class MovementManager {
     }
 
     public boolean canDoMove() {
-        return movements.getFirst() - this.strategy.game.getTickCount() >= 60;
+        return this.strategy.world.getTickIndex() - movements.getFirst() >= 60;
     }
 }
