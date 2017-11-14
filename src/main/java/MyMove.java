@@ -21,6 +21,12 @@ public class MyMove {
 
     public MyMove() {
         this.hash = ID++;
+        move.setAction(ActionType.NONE);
+    }
+
+    public MyMove last() {
+        MyMove res = this;
+        while(res.hasNext) res = res.next;
     }
 
     public boolean canBeApplied() {
@@ -28,7 +34,7 @@ public class MyMove {
     }
 
     public boolean canDoNext() {
-        return MyStrategy.MY_STRATEGY.world.getTickIndex() >= lastCalled + delay;
+        return applied && MyStrategy.MY_STRATEGY.world.getTickIndex() >= lastCalled + delay;
     }
 
     public MyMove condition(Predicate<MyStrategy> condition) {

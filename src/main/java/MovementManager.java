@@ -8,7 +8,7 @@ public class MovementManager {
         }
     }
 
-    public Set<MyMove> delayedMoves = new HashSet<>();
+    public TreeSet<MyMove> delayedMoves = new HashSet<>();
 
     public MyStrategy strategy;
 
@@ -29,9 +29,10 @@ public class MovementManager {
             for(MyMove myMove : delayedMoves) {
                 if(myMove.canBeApplied()) {
                     myMove.apply(strategy.move);
+                    registerMovement();
                     if(!myMove.hasNext) delayedMoves.remove(myMove);
                     return;
-                } else if(myMove.hasNext && myMove.canDoNext()) {
+                } else if(myMove.hasNext && myMove.canDoNext() && myMove.next.canBeApplied()) {
                     delayedMoves.add(myMove.next);
                     delayedMoves.remove(myMove);
                     return;

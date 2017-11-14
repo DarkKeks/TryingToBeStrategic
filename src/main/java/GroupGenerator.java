@@ -43,7 +43,7 @@ public class GroupGenerator {
 
     private void addMoves(Map<VehicleType, Pair<Integer, Integer>> surface,
                           Map<VehicleType, Pair<Integer, Integer>> sky) {
-        ArrayList<MyMove> moves = new ArrayList<>();
+        Map<VehicleType, MyMove> moves = new HashMap<>();
 
         boolean two = false, three = false;
 
@@ -58,15 +58,48 @@ public class GroupGenerator {
         if(!two) {
             int i = 0;
             for(VehicleType type : surfaceTypes) {
-                moves.add(new MyMove()
+                moves.put(type, new MyMove()
                         .clearAndSelect(type)
                         .next(new MyMove()
                                 .move(Util.getCoordByIdx(i++),
                                         Util.getCoordByIdx(surface.get(type).getValue()))));
             }
+        } else if(!three) {
+            boolean used[] = new boolean[3];
+            for(VehicleType type : surfaceTypes)
+                if(cnt[surface.get(type).getKey()] == 2) 
+                    used[surface.get(type).getValue()] = true;
+
+            int free = 0;
+            for(int i = 0; i < 3; ++i)
+                if(!used[i]) free = i;
+            for(VehicleType type : surfaceTypes)
+                if(cnt[surface.get(type).getKey()] == 1)
+                    moves.put(type, new MyMove()
+                            .clearAndSelect(type)
+                            .next(new MyMove()
+                                    .move(Util.getCoordByIdx(free),
+                                            Util.getCoordByIdx(surface.get(type).getValue()))));
         }
 
-    }
+        for(VehicleType type : surfaceTypes) {
+            if(surface.get(type).getValue() != 2) {
+                MyMove move = new MyMove()
+                        .clearAndSelect(type)
+                        .next(new MyMove()
+                                .move(Util.getCoordByIdx(surface.get(type).getKey()),
+                                        Util.getCoordByIdx(2)));
+                if(!moves.contains(type))
+                    moves.put(type, new MyMove()           
+                moves.get(type).last()
+                    .delay(300)
+                    .next(move);
+            }
+        }
+
+        for(MyMove move : moves.values())
+            strategy.movementManager.add(move);
+    }  
 
     public Point getCornerPointOfType(VehicleType type) {
         Point point = new Point(1025, 1025);
