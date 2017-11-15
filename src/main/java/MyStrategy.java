@@ -32,16 +32,17 @@ public final class MyStrategy implements Strategy {
         boolean isFirstTick = random == null;
 
         if(isFirstTick) {
+            System.out.println(game.getRandomSeed());
             random = new Random(game.getRandomSeed());
             movementManager = new MovementManager(this);
         }
 
+        debugRender();
+
         initMove();
         if(isFirstTick) new GroupGenerator(this);
 
-        debugRender();
-
-        if(movementManager.canMove())
+        if(!movementManager.canMove())
             process();
         movementManager.move();
     }

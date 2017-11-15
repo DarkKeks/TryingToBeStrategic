@@ -3,9 +3,9 @@ import model.Vehicle;
 import model.VehicleType;
 
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class GroupGenerator {
 
@@ -16,10 +16,6 @@ public class GroupGenerator {
 
     public GroupGenerator(MyStrategy strategy) {
         this.strategy = strategy;
-
-        strategy.movementManager.add(new MyMove()
-                .clearAndSelect(VehicleType.FIGHTER)
-                .next(new MyMove().scale(0, 0, 2)));
 
         initGroups();
     }
@@ -38,11 +34,16 @@ public class GroupGenerator {
             sky.put(type, new Pair<>(point.x, point.y));
         }
 
-        addMoves(surface, sky);
+        Map<VehicleType, MyMove> moves = addPositionMoves(surface, sky);
+        addUniteMoves();
     }
 
-    private void addMoves(Map<VehicleType, Pair<Integer, Integer>> surface,
-                          Map<VehicleType, Pair<Integer, Integer>> sky) {
+    private void addUniteMoves() {
+
+    }
+
+    private Map<VehicleType, MyMove> addPositionMoves(Map<VehicleType, Pair<Integer, Integer>> surface,
+                                  Map<VehicleType, Pair<Integer, Integer>> sky) {
         Map<VehicleType, MyMove> moves = new HashMap<>();
 
         boolean two = false, three = false;
@@ -55,50 +56,66 @@ public class GroupGenerator {
             if(cnt[y] == 2) two = true;
         }
 
+        boolean delay = true;
         if(!two) {
-            int i = 0;
-            for(VehicleType type : surfaceTypes) {
-                moves.put(type, new MyMove()
-                        .clearAndSelect(type)
-                        .next(new MyMove()
-                                .move(Util.getCoordByIdx(i++),
-                                        Util.getCoordByIdx(surface.get(type).getValue()))));
-            }
+            final int[] i = {0};
+            delay = false;
+            int cnt1[] = new int[3];
+            for(VehicleType type : surfaceTypes)
+                delay |= (++cnt1[surface.get(type).getKey()]) > 1;
+            if(delay)
+                surface.entrySet()
+                        .stream()
+                        .sorted(Map.Entry.comparingByValue((p1, p2) -> (Integer.compare(p1.getKey(), p2.getKey()))))
+                        .forEach((e) -> {
+                            VehicleType type = e.getKey();
+                            moves.put(type, new MyMove().clearSelectMove(type,
+                                    (i[0]++ - e.getValue().getKey()) * Util.DIST_BETW_GROUPS, 0));
+                        });
         } else if(!three) {
             boolean used[] = new boolean[3];
             for(VehicleType type : surfaceTypes)
-                if(cnt[surface.get(type).getKey()] == 2) 
-                    used[surface.get(type).getValue()] = true;
+                if(cnt[surface.get(type).getValue()] == 2)
+                    used[surface.get(type).getKey()] = true;
 
             int free = 0;
+            int cur = 0;
+            VehicleType curType = null;
+
             for(int i = 0; i < 3; ++i)
                 if(!used[i]) free = i;
-            for(VehicleType type : surfaceTypes)
-                if(cnt[surface.get(type).getKey()] == 1)
-                    moves.put(type, new MyMove()
-                            .clearAndSelect(type)
-                            .next(new MyMove()
-                                    .move(Util.getCoordByIdx(free),
-                                            Util.getCoordByIdx(surface.get(type).getValue()))));
+            for(VehicleType type : surfaceTypes) {
+                if (cnt[surface.get(type).getValue()] == 1) {
+                    cur = surface.get(type).getKey();
+                    curType = type;
+                }
+            }
+            if(cur == free)
+                delay = false;
+            else if(Math.abs(cur - free) <= 1)
+                moves.put(curType, new MyMove().clearSelectMove(curType,
+                        (free - cur) * Util.DIST_BETW_GROUPS, 0));
+            else
+                for(VehicleType type : surfaceTypes)
+                    if(type != curType)
+                        moves.put(type, new MyMove().clearSelectMove(type,
+                                (free > cur ? 1 : -1) * Util.DIST_BETW_GROUPS, 0));
+        } else {
+            delay = false;
         }
 
         for(VehicleType type : surfaceTypes) {
-            if(surface.get(type).getValue() != 2) {
-                MyMove move = new MyMove()
-                        .clearAndSelect(type)
-                        .next(new MyMove()
-                                .move(Util.getCoordByIdx(surface.get(type).getKey()),
-                                        Util.getCoordByIdx(2)));
-                if(!moves.contains(type))
-                    moves.put(type, new MyMove()           
+            if(surface.get(type).getValue() != 1) {
+                MyMove move = new MyMove().clearSelectMove(type,
+                        0, (1 - surface.get(type).getValue()) * Util.DIST_BETW_GROUPS);
+                if(!moves.containsKey(type))
+                    moves.put(type, new MyMove());
                 moves.get(type).last()
-                    .delay(300)
-                    .next(move);
+                    .next(move, (delay ? 300 : 0));
             }
         }
 
-        for(MyMove move : moves.values())
-            strategy.movementManager.add(move);
+        return moves;
     }  
 
     public Point getCornerPointOfType(VehicleType type) {

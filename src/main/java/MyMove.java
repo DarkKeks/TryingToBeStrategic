@@ -4,17 +4,19 @@ import model.VehicleType;
 
 import java.util.function.Predicate;
 
+@SuppressWarnings("WeakerAccess")
 public class MyMove {
 
     public static int ID = 0;
     public int hash;
+    public int addTime = 0;
 
     public boolean hasNext;
     public MyMove next;
     public Predicate<MyStrategy> condition = (strategy) -> true;
     public int delay;
 
-    public int lastCalled = -1000000;
+    public int minTick;
     public boolean applied = false;
 
     public Move move = new Move();
@@ -22,19 +24,18 @@ public class MyMove {
     public MyMove() {
         this.hash = ID++;
         move.setAction(ActionType.NONE);
+        minTick = MyStrategy.MY_STRATEGY.world.getTickIndex();
     }
 
     public MyMove last() {
         MyMove res = this;
         while(res.hasNext) res = res.next;
+        return res;
     }
 
     public boolean canBeApplied() {
-        return !applied && condition.test(MyStrategy.MY_STRATEGY);
-    }
-
-    public boolean canDoNext() {
-        return applied && MyStrategy.MY_STRATEGY.world.getTickIndex() >= lastCalled + delay;
+        return !applied && condition.test(MyStrategy.MY_STRATEGY) &&
+                minTick <= MyStrategy.MY_STRATEGY.world.getTickIndex();
     }
 
     public MyMove condition(Predicate<MyStrategy> condition) {
@@ -76,8 +77,11 @@ public class MyMove {
         move.setVehicleId(this.move.getVehicleId());
         move.setFacilityId(this.move.getFacilityId());
 
-        lastCalled = MyStrategy.MY_STRATEGY.world.getTickIndex();
         applied = true;
+    }
+
+    public MyMove clearSelectMove(VehicleType type, int x, int y) {
+        return clearAndSelect(type).next(new MyMove().move(x, y));
     }
 
     public MyMove clearAndSelect(int left, int top, int right, int bottom, VehicleType type) {
@@ -184,5 +188,10 @@ public class MyMove {
     @Override
     public int hashCode() {
         return hash;
+    }
+
+    @Override
+    public String toString() {
+        return move.getAction().toString();
     }
 }

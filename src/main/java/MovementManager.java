@@ -1,6 +1,7 @@
 import java.util.*;
 
 public class MovementManager {
+    public static int time = 0;
     public static Deque<Integer> movements = new ArrayDeque<>();
     static {
         for(int i = 0; i < 12; ++i) {
@@ -8,7 +9,7 @@ public class MovementManager {
         }
     }
 
-    public TreeSet<MyMove> delayedMoves = new HashSet<>();
+    public TreeSet<MyMove> delayedMoves = new TreeSet<>(Comparator.comparingInt(a -> a.addTime));
 
     public MyStrategy strategy;
 
@@ -17,6 +18,7 @@ public class MovementManager {
     }
 
     public void add(MyMove move) {
+        move.addTime = time++;
         delayedMoves.add(move);
     }
 
@@ -30,11 +32,15 @@ public class MovementManager {
                 if(myMove.canBeApplied()) {
                     myMove.apply(strategy.move);
                     registerMovement();
-                    if(!myMove.hasNext) delayedMoves.remove(myMove);
-                    return;
-                } else if(myMove.hasNext && myMove.canDoNext() && myMove.next.canBeApplied()) {
-                    delayedMoves.add(myMove.next);
-                    delayedMoves.remove(myMove);
+                    if (myMove.hasNext) {
+                        MyMove next = myMove.next;
+                        next.addTime = (myMove.delay == 0 ? myMove.addTime : time++);
+                        next.minTick = strategy.world.getTickIndex() + myMove.delay;
+                        delayedMoves.remove(myMove);
+                        delayedMoves.add(next);
+                    } else {
+                        delayedMoves.remove(myMove);
+                    }
                     return;
                 }
             }
