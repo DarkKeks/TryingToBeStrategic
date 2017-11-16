@@ -63,7 +63,7 @@ public class MyVehicle {
         this.isMoving = false;
     }
 
-    public update(VehicleUpdate vehicleUpdate) {
+    public void update(VehicleUpdate vehicleUpdate) {
         this.lastUpdateTick = MyStrategy.MY_STRATEGY.world.getTickIndex();
         if(vehicleUpdate.getX() != this.x || vehicleUpdate.getY() != this.y) 
             this.lastPositionUpdateTick = MyStrategy.MY_STRATEGY.world.getTickIndex();

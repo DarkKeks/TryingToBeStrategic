@@ -68,19 +68,14 @@ public class GroupGenerator {
 
         if(!two) {
             final int[] i = {0};
-            delay = false;
-            int cnt1[] = new int[3];
-            for(VehicleType type : surfaceTypes)
-                delay |= (++cnt1[surface.get(type).getKey()]) > 1;
-            if(delay)
-                surface.entrySet()
-                        .stream()
-                        .sorted(Map.Entry.comparingByValue((p1, p2) -> (Integer.compare(p1.getKey(), p2.getKey()))))
-                        .forEach((e) -> {
-                            VehicleType type = e.getKey();
-                            moves.put(type, new MyMove().clearAssignSelectMove(type, strategy.groupByType(type),
-                                    (i[0]++ - e.getValue().getKey()) * Util.DIST_BETW_GROUPS, 0));
-                        });
+            surface.entrySet()
+                    .stream()
+                    .sorted(Map.Entry.comparingByValue((p1, p2) -> (Integer.compare(p1.getKey(), p2.getKey()))))
+                    .forEach((e) -> {
+                        VehicleType type = e.getKey();
+                        moves.put(type, new MyMove().clearAssignSelectMove(type, strategy.groupByType(type),
+                                (i[0]++ - e.getValue().getKey()) * Util.DIST_BETW_GROUPS, 0));
+                    });
         } else if(!three) {
             boolean used[] = new boolean[3];
             for(VehicleType type : surfaceTypes)
@@ -117,7 +112,7 @@ public class GroupGenerator {
                 if(!moves.containsKey(type))
                     moves.put(type, new MyMove());
                 moves.get(type).last()
-                    .next(move, 20);
+                    .next(move);
             }
         }
 
