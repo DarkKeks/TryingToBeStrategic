@@ -43,13 +43,28 @@ public class GroupGenerator {
 
         MyMove move = addPositionMoves(surface, sky);
 
-        addUniteMoves();
+        addUniteMoves(move);
 
         strategy.movementManager.add(move);
     }
 
-    private void addUniteMoves() {
+    private void addUniteMoves(MyMove move) {
+        MyMove result = new MyMove()
+                .condition(Util.isGroupMovingCondition(1).negate())
+                .clearAndSelect(1)
+                .next(new MyMove()
+                        .scale(0, 0, 1.5));
 
+        strategy.vehicleById.values()
+                .stream()
+                .filter(veh -> !veh.enemy)
+                .filter(Util.distinctByKey(MyVehicle::getY))
+                .sorted((a, b) -> Double.compare(b.getY(), a.getY()))
+                .forEach(veh -> {
+                    )
+                });
+
+        move.last().next(result);
     }
 
     private MyMove addPositionMoves(Map<VehicleType, Pair<Integer, Integer>> surface,

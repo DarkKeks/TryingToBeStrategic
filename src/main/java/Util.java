@@ -1,5 +1,8 @@
 import model.VehicleType;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 public class Util {
@@ -22,6 +25,11 @@ public class Util {
             case 2: return 166;
             default: return -1;
         }
+    }
+
+    public static <T> Predicate<T> distinctByKey(Function<? super T, ?> keyExtractor) {
+        Map<Object,Boolean> seen = new HashMap<>();
+        return t -> seen.putIfAbsent(keyExtractor.apply(t), Boolean.TRUE) == null;
     }
 
     public static Predicate<MyStrategy> isGroupMovingCondition(final int groupId) {
