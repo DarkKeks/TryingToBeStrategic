@@ -16,7 +16,8 @@ public class MyMove {
     public Predicate<MyStrategy> condition = (strategy) -> true;
     public int delay;
 
-    public int minTick;
+    public int retryDelay = 0;
+    public int minTick = 0;
     public boolean applied = false;
 
     public Move move = new Move();
@@ -36,6 +37,16 @@ public class MyMove {
     public boolean canBeApplied() {
         return !applied && condition.test(MyStrategy.MY_STRATEGY) &&
                 minTick <= MyStrategy.MY_STRATEGY.world.getTickIndex();
+    }
+
+    public MyMove retryDelay(int delay) {
+        retryDelay = delay;
+        return this;
+    }
+
+    public void retry() {
+        if(minTick <= MyStrategy.MY_STRATEGY.world.getTickIndex())
+            minTick += retryDelay;
     }
 
     public MyMove condition(Predicate<MyStrategy> condition) {
@@ -78,6 +89,10 @@ public class MyMove {
         move.setFacilityId(this.move.getFacilityId());
 
         applied = true;
+    }
+
+    public MyMove clearSelectAssignMove(VehicleType type, int groupId, int x, int y) {
+        return clearAndSelect(type).assign(groupId).next(new MyMove().move(x, y));
     }
 
     public MyMove clearSelectMove(VehicleType type, int x, int y) {

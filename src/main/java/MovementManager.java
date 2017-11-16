@@ -42,6 +42,8 @@ public class MovementManager {
                         delayedMoves.remove(myMove);
                     }
                     return;
+                } else {
+                    myMove.retry();
                 }
             }
         }

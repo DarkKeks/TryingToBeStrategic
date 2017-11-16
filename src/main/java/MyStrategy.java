@@ -16,7 +16,9 @@ public final class MyStrategy implements Strategy {
     public MovementManager movementManager;
 
     public Map<VehicleType, Integer> groupByType = new HashMap<>();
-    public Map<Long, Vehicle> vehicleById = new HashMap<>();
+    public Map<Long, MyVehicle> vehicleById = new HashMap<>();
+    public DefaultHashMap<VehicleType, Map<Long, MyVehicle> > vehicleByType = new DefaultHashMap<>();
+    public DefaultHashMap<Integer, Map<Long, MyVehicle> > vehicleByGroup = new DefaultHashMap<>();
 
     public MyStrategy() {
         MY_STRATEGY = this;
@@ -49,7 +51,7 @@ public final class MyStrategy implements Strategy {
 
     private void debugRender() {
         RewindClient rc = RewindClient.getInstance();
-        for(Vehicle veh : vehicleById.values()) {
+        for(MyVehicle veh : vehicleById.values()) {
             rc.livingUnit(veh.getX(),
                     veh.getY(),
                     veh.getRadius(),
@@ -66,15 +68,24 @@ public final class MyStrategy implements Strategy {
 
     private void initMove() {
         for(Vehicle veh : world.getNewVehicles()) {
-            vehicleById.put(veh.getId(), veh);
+            MyVehicle myVeh = new MyVehicle(veh);
+            vehicleById.put(veh.getId(), myVeh);
+            vehicleByType.get(veh.type()).put(veh.getId(), myVeh);
         }
 
         for(VehicleUpdate update : world.getVehicleUpdates()) {
             long id = update.getId();
-            if(update.getDurability() > 0)
-                vehicleById.put(id, new Vehicle(vehicleById.get(id), update));
-            else
-                vehicleById.remove(update.getId());
+            if(update.getDurability() > 0) {
+                MyVehicle veh = vehicleById.get(id);
+                veh.update(update);
+                for(int group : update.getGroups())
+                    vehicleByGroup.get(group).put(id, veh);
+            } else {
+                for(int group : update.getGroups())
+                    vehicleByGroup.get(group).remove(id);
+                vehicleByType.get(vehicleById.get(id).getType()).remove(id);
+                vehicleById.remove(id);
+            }
         }
     }
 

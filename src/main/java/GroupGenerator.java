@@ -34,8 +34,18 @@ public class GroupGenerator {
             sky.put(type, new Pair<>(point.x, point.y));
         }
 
+        strategy.movementManager.add(new MyMove()
+            .clearAndSelect(surfaceTypes[0])
+            .addToSelection(surfaceTypes[1])
+            .addToSelection(surfaceTypes[2])
+            .assign(1));
+
         Map<VehicleType, MyMove> moves = addPositionMoves(surface, sky);
         addUniteMoves();
+
+        for(MyMove move : moves.values) {
+            strategy.movementManager.add(move);
+        }
     }
 
     private void addUniteMoves() {
@@ -56,7 +66,6 @@ public class GroupGenerator {
             if(cnt[y] == 2) two = true;
         }
 
-        boolean delay = true;
         if(!two) {
             final int[] i = {0};
             delay = false;
@@ -69,7 +78,7 @@ public class GroupGenerator {
                         .sorted(Map.Entry.comparingByValue((p1, p2) -> (Integer.compare(p1.getKey(), p2.getKey()))))
                         .forEach((e) -> {
                             VehicleType type = e.getKey();
-                            moves.put(type, new MyMove().clearSelectMove(type,
+                            moves.put(type, new MyMove().clearAssignSelectMove(type, strategy.groupByType(type),
                                     (i[0]++ - e.getValue().getKey()) * Util.DIST_BETW_GROUPS, 0));
                         });
         } else if(!three) {
@@ -90,28 +99,25 @@ public class GroupGenerator {
                     curType = type;
                 }
             }
-            if(cur == free)
-                delay = false;
-            else if(Math.abs(cur - free) <= 1)
-                moves.put(curType, new MyMove().clearSelectMove(curType,
+            if(Math.abs(cur - free) <= 1)
+                moves.put(curType, new MyMove().clearSelectMove(curType, strategy.groupByType(type),
                         (free - cur) * Util.DIST_BETW_GROUPS, 0));
-            else
+            else if(cur != free)
                 for(VehicleType type : surfaceTypes)
                     if(type != curType)
-                        moves.put(type, new MyMove().clearSelectMove(type,
+                        moves.put(type, new MyMove().clearSelectMove(type, strategy.groupByType(type),
                                 (free > cur ? 1 : -1) * Util.DIST_BETW_GROUPS, 0));
-        } else {
-            delay = false;
         }
 
         for(VehicleType type : surfaceTypes) {
             if(surface.get(type).getValue() != 1) {
-                MyMove move = new MyMove().clearSelectMove(type,
-                        0, (1 - surface.get(type).getValue()) * Util.DIST_BETW_GROUPS);
+                MyMove move = new MyMove()
+                        .condition(Util.isGroupMovingCondition(1))
+                        .clearSelectMove(type, 0, (1 - surface.get(type).getValue()) * Util.DIST_BETW_GROUPS);
                 if(!moves.containsKey(type))
                     moves.put(type, new MyMove());
                 moves.get(type).last()
-                    .next(move, (delay ? 300 : 0));
+                    .next(move, 20);
             }
         }
 

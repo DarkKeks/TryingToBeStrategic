@@ -20,4 +20,24 @@ public class Util {
         }
     }
 
+    public Predicate<MyStrategy> isGroupMovingCondition(final int groupId) {
+        return () -> {
+            boolean moving = true;
+            for(MyVehicle veh : MyStrategy.MY_STRATEGY.vehicleByGroup.get(groupId).values())
+                if(veh.isMoving)
+                    return true;
+            return false;
+        };
+    }
+
+    public Predicate<MyStrategy> isTypeMovingCondition(final VehicleType type) {
+        return () -> {
+            boolean moving = true;
+            for(MyVehicle veh : MyStrategy.MY_STRATEGY.vehicleByType.get(type).values())
+                if(veh.isMoving)
+                    return true;
+            return false;
+        };
+    }
+
 }
