@@ -51,7 +51,7 @@ public class MovementManager {
 
     public void registerMovement() {
         movements.poll();
-        movements.add(strategy.game.getTickCount());
+        movements.add(strategy.world.getTickIndex());
     }
 
     public boolean canDoMove() {

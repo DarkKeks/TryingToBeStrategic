@@ -1,5 +1,4 @@
 import model.*;
-
 import java.util.*;
 
 @SuppressWarnings("WeakerAccess")
@@ -16,9 +15,10 @@ public final class MyStrategy implements Strategy {
     public MovementManager movementManager;
 
     public Map<VehicleType, Integer> groupByType = new HashMap<>();
+
     public Map<Long, MyVehicle> vehicleById = new HashMap<>();
-    public DefaultHashMap<VehicleType, Map<Long, MyVehicle> > vehicleByType = new DefaultHashMap<>();
-    public DefaultHashMap<Integer, Map<Long, MyVehicle> > vehicleByGroup = new DefaultHashMap<>();
+    public DefaultHashMap<VehicleType, Map<Long, MyVehicle> > vehicleByType = new DefaultHashMap<>(HashMap::new);
+    public DefaultHashMap<Integer, Map<Long, MyVehicle> > vehicleByGroup = new DefaultHashMap<>(HashMap::new);
 
     public MyStrategy() {
         MY_STRATEGY = this;
@@ -37,6 +37,12 @@ public final class MyStrategy implements Strategy {
             System.out.println(game.getRandomSeed());
             random = new Random(game.getRandomSeed());
             movementManager = new MovementManager(this);
+            groupByType.put(VehicleType.ARRV, 2);
+            groupByType.put(VehicleType.TANK, 3);
+            groupByType.put(VehicleType.IFV, 4);
+            groupByType.put(VehicleType.HELICOPTER, 5);
+            groupByType.put(VehicleType.FIGHTER, 6);
+
         }
 
         debugRender();
@@ -70,7 +76,7 @@ public final class MyStrategy implements Strategy {
         for(Vehicle veh : world.getNewVehicles()) {
             MyVehicle myVeh = new MyVehicle(veh);
             vehicleById.put(veh.getId(), myVeh);
-            vehicleByType.get(veh.type()).put(veh.getId(), myVeh);
+            vehicleByType.get(veh.getType()).put(veh.getId(), myVeh);
         }
 
         for(VehicleUpdate update : world.getVehicleUpdates()) {

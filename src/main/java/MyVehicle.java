@@ -1,4 +1,9 @@
-package model;
+import model.Unit;
+import model.Vehicle;
+import model.VehicleType;
+import model.VehicleUpdate;
+
+import java.util.Arrays;
 
 import static java.lang.StrictMath.hypot;
 
@@ -31,7 +36,6 @@ public class MyVehicle {
 
     public int lastUpdateTick;
     public int lastPositionUpdateTick;
-    public boolean isMoving;
 
     public MyVehicle(Vehicle veh) {
         this.id = veh.getId();
@@ -40,34 +44,32 @@ public class MyVehicle {
         this.radius = veh.getRadius();
         this.playerId = veh.getPlayerId();
         this.durability = veh.getDurability();
-        this.maxDurability = getMaxDurability();
-        this.maxSpeed = getMaxSpeed();
-        this.visionRange = getVisionRange();
-        this.squaredVisionRange = getSquaredVisionRange();
-        this.groundAttackRange = getGroundAttackRange();
-        this.squaredGroundAttackRange = getSquaredGroundAttackRange();
-        this.aerialAttackRange = getAerialAttackRange();
-        this.squaredAerialAttackRange = getSquaredAerialAttackRange();
-        this.groundDamage = getGroundDamage();
-        this.aerialDamage = getAerialDamage();
-        this.groundDefence = getGroundDefence();
-        this.aerialDefence = getAerialDefence();
-        this.attackCooldownTicks = getAttackCooldownTicks();
-        this.remainingAttackCooldownTicks = getRemainingAttackCooldownTicks();
-        this.type = getType();
-        this.aerial = isAerial();
-        this.selected = isSelected();
+        this.maxDurability = veh.getMaxDurability();
+        this.maxSpeed = veh.getMaxSpeed();
+        this.visionRange = veh.getVisionRange();
+        this.squaredVisionRange = veh.getSquaredVisionRange();
+        this.groundAttackRange = veh.getGroundAttackRange();
+        this.squaredGroundAttackRange = veh.getSquaredGroundAttackRange();
+        this.aerialAttackRange = veh.getAerialAttackRange();
+        this.squaredAerialAttackRange = veh.getSquaredAerialAttackRange();
+        this.groundDamage = veh.getGroundDamage();
+        this.aerialDamage = veh.getAerialDamage();
+        this.groundDefence = veh.getGroundDefence();
+        this.aerialDefence = veh.getAerialDefence();
+        this.attackCooldownTicks = veh.getAttackCooldownTicks();
+        this.remainingAttackCooldownTicks = veh.getRemainingAttackCooldownTicks();
+        this.type = veh.getType();
+        this.aerial = veh.isAerial();
+        this.selected = veh.isSelected();
         this.groups = veh.getGroups();
 
         this.lastUpdateTick = this.lastPositionUpdateTick = MyStrategy.MY_STRATEGY.world.getTickIndex();
-        this.isMoving = false;
     }
 
     public void update(VehicleUpdate vehicleUpdate) {
         this.lastUpdateTick = MyStrategy.MY_STRATEGY.world.getTickIndex();
         if(vehicleUpdate.getX() != this.x || vehicleUpdate.getY() != this.y) 
             this.lastPositionUpdateTick = MyStrategy.MY_STRATEGY.world.getTickIndex();
-        this.isMoving = this.lastUpdateTick == this.lastPositionUpdateTick;
 
         this.x = vehicleUpdate.getX();
         this.y = vehicleUpdate.getY();
@@ -75,6 +77,10 @@ public class MyVehicle {
         this.remainingAttackCooldownTicks = vehicleUpdate.getRemainingAttackCooldownTicks();
         this.selected = vehicleUpdate.isSelected();
         this.groups = vehicleUpdate.getGroups();
+    }
+
+    public boolean isMoving() {
+        return lastPositionUpdateTick == MyStrategy.MY_STRATEGY.world.getTickIndex();
     }
     
     public double getRadius() {
@@ -178,7 +184,7 @@ public class MyVehicle {
     }
 
     public double getDistanceTo(Unit unit) {
-        return getDistanceTo(unit.x, unit.y);
+        return getDistanceTo(unit.getX(), unit.getY());
     }
 
     public double getSquaredDistanceTo(double x, double y) {
@@ -188,6 +194,6 @@ public class MyVehicle {
     }
 
     public double getSquaredDistanceTo(Unit unit) {
-        return getSquaredDistanceTo(unit.x, unit.y);
+        return getSquaredDistanceTo(unit.getX(), unit.getY());
     }
 }

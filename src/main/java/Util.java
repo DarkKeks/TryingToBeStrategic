@@ -1,3 +1,7 @@
+import model.VehicleType;
+
+import java.util.function.Predicate;
+
 public class Util {
 
     public static final int DIST_BETW_GROUPS = 74;
@@ -20,21 +24,19 @@ public class Util {
         }
     }
 
-    public Predicate<MyStrategy> isGroupMovingCondition(final int groupId) {
-        return () -> {
-            boolean moving = true;
+    public static Predicate<MyStrategy> isGroupMovingCondition(final int groupId) {
+        return (strategy) -> {
             for(MyVehicle veh : MyStrategy.MY_STRATEGY.vehicleByGroup.get(groupId).values())
-                if(veh.isMoving)
+                if(veh.isMoving())
                     return true;
             return false;
         };
     }
 
-    public Predicate<MyStrategy> isTypeMovingCondition(final VehicleType type) {
-        return () -> {
-            boolean moving = true;
+    public static Predicate<MyStrategy> isTypeMovingCondition(final VehicleType type) {
+        return (strategy) -> {
             for(MyVehicle veh : MyStrategy.MY_STRATEGY.vehicleByType.get(type).values())
-                if(veh.isMoving)
+                if(veh.isMoving())
                     return true;
             return false;
         };

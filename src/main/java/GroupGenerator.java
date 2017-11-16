@@ -1,11 +1,9 @@
 import javafx.util.Pair;
-import model.Vehicle;
 import model.VehicleType;
 
 import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 public class GroupGenerator {
 
@@ -35,26 +33,28 @@ public class GroupGenerator {
         }
 
         strategy.movementManager.add(new MyMove()
-            .clearAndSelect(surfaceTypes[0])
-            .addToSelection(surfaceTypes[1])
-            .addToSelection(surfaceTypes[2])
-            .assign(1));
+                .clearAndSelect(surfaceTypes[0])
+                .next(new MyMove()
+                        .addToSelection(surfaceTypes[1])
+                        .next(new MyMove()
+                                .addToSelection(surfaceTypes[2])
+                                .next(new MyMove()
+                                        .assign(1)))));
 
-        Map<VehicleType, MyMove> moves = addPositionMoves(surface, sky);
+        MyMove move = addPositionMoves(surface, sky);
+
         addUniteMoves();
 
-        for(MyMove move : moves.values) {
-            strategy.movementManager.add(move);
-        }
+        strategy.movementManager.add(move);
     }
 
     private void addUniteMoves() {
 
     }
 
-    private Map<VehicleType, MyMove> addPositionMoves(Map<VehicleType, Pair<Integer, Integer>> surface,
+    private MyMove addPositionMoves(Map<VehicleType, Pair<Integer, Integer>> surface,
                                   Map<VehicleType, Pair<Integer, Integer>> sky) {
-        Map<VehicleType, MyMove> moves = new HashMap<>();
+        MyMove result = new MyMove();
 
         boolean two = false, three = false;
 
@@ -73,8 +73,9 @@ public class GroupGenerator {
                     .sorted(Map.Entry.comparingByValue((p1, p2) -> (Integer.compare(p1.getKey(), p2.getKey()))))
                     .forEach((e) -> {
                         VehicleType type = e.getKey();
-                        moves.put(type, new MyMove().clearAssignSelectMove(type, strategy.groupByType(type),
-                                (i[0]++ - e.getValue().getKey()) * Util.DIST_BETW_GROUPS, 0));
+                        if(i[0]++ != e.getValue().getKey())
+                            result.last().next(new MyMove().clearSelectMove(type,
+                                    (i[0] - 1 - e.getValue().getKey()) * Util.DIST_BETW_GROUPS, 0));
                     });
         } else if(!three) {
             boolean used[] = new boolean[3];
@@ -94,34 +95,45 @@ public class GroupGenerator {
                     curType = type;
                 }
             }
-            if(Math.abs(cur - free) <= 1)
-                moves.put(curType, new MyMove().clearSelectMove(curType, strategy.groupByType(type),
-                        (free - cur) * Util.DIST_BETW_GROUPS, 0));
-            else if(cur != free)
-                for(VehicleType type : surfaceTypes)
-                    if(type != curType)
-                        moves.put(type, new MyMove().clearSelectMove(type, strategy.groupByType(type),
-                                (free > cur ? 1 : -1) * Util.DIST_BETW_GROUPS, 0));
+            if(cur != free)
+                if(Math.abs(cur - free) <= 1)
+                    result.last().next(new MyMove().clearSelectMove(curType,
+                            (free - cur) * Util.DIST_BETW_GROUPS, 0));
+                else {
+                    MyMove select = new MyMove();
+                    boolean first = true;
+                    for (VehicleType type : surfaceTypes) if (type != curType) {
+                        if (first) {
+                            select.clearAndSelect(type);
+                            first = false;
+                        } else
+                            select.last().next(new MyMove().addToSelection(type));
+                    }
+                    select.last().next(new MyMove()
+                            .move((free > cur ? 1 : -1) * Util.DIST_BETW_GROUPS, 0));
+
+                    result.last().next(select);
+                }
         }
 
+        boolean first = true;
         for(VehicleType type : surfaceTypes) {
             if(surface.get(type).getValue() != 1) {
                 MyMove move = new MyMove()
-                        .condition(Util.isGroupMovingCondition(1))
                         .clearSelectMove(type, 0, (1 - surface.get(type).getValue()) * Util.DIST_BETW_GROUPS);
-                if(!moves.containsKey(type))
-                    moves.put(type, new MyMove());
-                moves.get(type).last()
-                    .next(move);
+                if(first) move.condition(Util.isGroupMovingCondition(1).negate());
+                first = false;
+
+                result.last().next(move);
             }
         }
 
-        return moves;
+        return result;
     }  
 
     public Point getCornerPointOfType(VehicleType type) {
         Point point = new Point(1025, 1025);
-        for(Vehicle veh : strategy.vehicleById.values())
+        for(MyVehicle veh : strategy.vehicleById.values())
             if(veh.getType() == type)
                 if (veh.getX() < point.getX() || veh.getY() < point.getY())
                     point.setLocation(veh.getX(), veh.getY());
