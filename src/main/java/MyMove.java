@@ -2,6 +2,7 @@ import model.ActionType;
 import model.Move;
 import model.VehicleType;
 
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 @SuppressWarnings("WeakerAccess")
@@ -15,6 +16,9 @@ public class MyMove {
     public MyMove next;
     public Predicate<MyStrategy> condition = (strategy) -> true;
     public int delay;
+
+    public boolean hasGenerator;
+    public Function<MyStrategy, MyMove> generator;
 
     public int retryDelay = 0;
     public int minTick = 0;
@@ -47,6 +51,20 @@ public class MyMove {
     public void retry() {
         if(minTick <= MyStrategy.MY_STRATEGY.world.getTickIndex())
             minTick += retryDelay;
+    }
+
+    public void applyGenerator() {
+        MyMove _next = next;
+        int _delay = delay;
+        next(generator.apply(MyStrategy.MY_STRATEGY));
+        if(_next != null)
+            last().next(_next, _delay);
+    }
+
+    public MyMove generator(Function<MyStrategy, MyMove> f) {
+        this.generator = f;
+        this.hasGenerator = true;
+        return this;
     }
 
     public MyMove condition(Predicate<MyStrategy> condition) {
@@ -91,11 +109,15 @@ public class MyMove {
         applied = true;
     }
 
-    public MyMove clearSelectAssignMove(VehicleType type, int groupId, int x, int y) {
-        return clearAndSelect(type).assign(groupId).next(new MyMove().move(x, y));
+    public MyMove clearSelectAssignMove(VehicleType type, int groupId, double x, double y) {
+        return clearAndSelect(type).next(new MyMove().assign(groupId).next(new MyMove().move(x, y)));
     }
 
-    public MyMove clearSelectMove(VehicleType type, int x, int y) {
+    public MyMove clearSelectMove(int group, double x, double y, double maxSpeed) {
+        return clearAndSelect(group).next(new MyMove().move(x, y, maxSpeed));
+    }
+
+    public MyMove clearSelectMove(VehicleType type, double x, double y) {
         return clearAndSelect(type).next(new MyMove().move(x, y));
     }
 
@@ -123,7 +145,7 @@ public class MyMove {
         return this;
     }
 
-    public MyMove addToSelection(int left, int top, int right, int bottom, VehicleType type) {
+    public MyMove addToSelection(double left, double top, double right, double bottom, VehicleType type) {
         clearAndSelect(left, top, right, bottom, type);
         move.setAction(ActionType.ADD_TO_SELECTION);
         return this;

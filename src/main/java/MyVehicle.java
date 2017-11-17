@@ -65,7 +65,7 @@ public class MyVehicle {
         this.groups = veh.getGroups();
 
         this.lastUpdateTick = this.lastPositionUpdateTick = MyStrategy.MY_STRATEGY.world.getTickIndex();
-        this.enemy = this.playerId == MyStrategy.MY_STRATEGY.player.getId();
+        this.enemy = this.playerId != MyStrategy.MY_STRATEGY.player.getId();
     }
 
     public void update(VehicleUpdate vehicleUpdate) {

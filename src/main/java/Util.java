@@ -8,6 +8,7 @@ import java.util.function.Predicate;
 public class Util {
 
     public static final int DIST_BETW_GROUPS = 74;
+    public static final int CENTER_POINT = 119;
 
     public static int getIdxByCoord(int coord) {
         switch (coord) {

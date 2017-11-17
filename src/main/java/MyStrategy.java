@@ -45,7 +45,7 @@ public final class MyStrategy implements Strategy {
 
         }
 
-        //debugRender();
+        debugRender();
 
         initMove();
         if(isFirstTick) new GroupGenerator(this);

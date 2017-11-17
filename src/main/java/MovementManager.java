@@ -30,6 +30,8 @@ public class MovementManager {
         if(canMove()) {
             for(MyMove myMove : delayedMoves) {
                 if(myMove.canBeApplied()) {
+                    if(myMove.hasGenerator)
+                        myMove.applyGenerator();
                     myMove.apply(strategy.move);
                     registerMovement();
                     if (myMove.hasNext) {

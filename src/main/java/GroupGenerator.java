@@ -1,7 +1,9 @@
 import javafx.util.Pair;
+import model.Vehicle;
 import model.VehicleType;
 
 import java.awt.*;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,6 +43,24 @@ public class GroupGenerator {
                                 .next(new MyMove()
                                         .assign(1)))));
 
+        MyMove getSkyAway = new MyMove()
+                .clearAndSelect(skyTypes[0])
+                .next(new MyMove()
+                        .addToSelection(skyTypes[1])
+                        .next(new MyMove()
+                                .assign(2)
+                                .next(new MyMove()
+                                        .generator(strategy -> {
+                                            MyMove res = new MyMove();
+                                            for (VehicleType type : skyTypes) {
+                                                Point p = getCornerPointOfType(type);
+                                                if(p.y == 1) res.last().next(new MyMove()
+                                                                .clearSelectMove(type, 0, Util.DIST_BETW_GROUPS));
+                                            }
+                                            return res;
+                                        }))));
+        strategy.movementManager.add(getSkyAway);
+
         MyMove move = addPositionMoves(surface, sky);
 
         addUniteMoves(move);
@@ -49,26 +69,65 @@ public class GroupGenerator {
     }
 
     private void addUniteMoves(MyMove move) {
-        MyMove result = new MyMove()
-                .condition(Util.isGroupMovingCondition(1).negate());
-
-        strategy.vehicleById.values()
-                .stream()
-                .filter(veh -> !veh.enemy)
-                .filter(Util.distinctByKey(MyVehicle::getY))
-                .sorted((a, b) -> Double.compare(b.getY(), a.getY()))
-                .forEach(veh ->
-                    result.last().next(new MyMove()
-                            .clearAndSelect(0, veh.getY() - 1, 1024, veh.getY() +  1)
-                            .next(new MyMove().move(0, (veh.getY() - 119) / 1.5)))
-                );
-
-        move.last().next(result);
+        MyMove res = new MyMove()
+                .condition(Util.isGroupMovingCondition(1).negate())
+                .generator(strategy -> {
+                    final MyMove[] result = new MyMove[1];
+                    final boolean[] first = {true};
+                    strategy.vehicleById.values()
+                            .stream()
+                            .filter(veh -> !veh.enemy)
+                            .filter(veh -> veh.type == surfaceTypes[0] || veh.type == surfaceTypes[1] || veh.type == surfaceTypes[2])
+                            .filter(Util.distinctByKey(MyVehicle::getY))
+                            .sorted((a, b) -> Double.compare(Math.abs(b.getY() - Util.CENTER_POINT), Math.abs(a.getY() - Util.CENTER_POINT)))
+                            .forEach(veh -> {
+                                MyMove newMove = new MyMove()
+                                        .clearAndSelect(0, veh.getY() - 1, 1024, veh.getY() + 1)
+                                        .next(new MyMove().move(0, (veh.getY() - Util.CENTER_POINT) / 0.706));
+                                if (first[0]) {
+                                    result[0] = newMove;
+                                    first[0] = false;
+                                } else
+                                    result[0].last().next(newMove);
+                            });
+                    return result[0];
+                });
+        res.last().next(new MyMove()
+                .condition(Util.isGroupMovingCondition(1).negate()));
+        int i = 0;
+        for(VehicleType type : surfaceTypes) {
+            res.last().next(new MyMove()
+                    .clearSelectMove(type, 0, (1.0 - i) * 4.5));
+            i++;
+        }
+        res.last().next(new MyMove()
+                .condition(Util.isGroupMovingCondition(1).negate())
+                .generator(strategy -> {
+                    MyMove result = new MyMove();
+                    for(VehicleType type : surfaceTypes) {
+                        Point p = getCornerPointOfType(type);
+                        result.last().next(new MyMove()
+                                .clearSelectMove(type, Util.getCoordByIdx(1) - Util.getCoordByIdx(p.x), 0));
+                    }
+                    return result;
+                }));
+        res.last().next(new MyMove()
+                .condition(Util.isGroupMovingCondition(1).negate())
+                .clearAndSelect(1)
+                .next(new MyMove()
+                        .scale(Util.CENTER_POINT, Util.CENTER_POINT, 0.1)
+                        .next(new MyMove()
+                                .condition(Util.isGroupMovingCondition(1).negate())
+                                .move(900, 900, 0.2)
+                                .next(new MyMove()
+                                        .clearSelectMove(2, 900, 900, 0.3)))));
+        move.last().next(res);
     }
 
     private MyMove addPositionMoves(Map<VehicleType, Pair<Integer, Integer>> surface,
                                   Map<VehicleType, Pair<Integer, Integer>> sky) {
-        MyMove result = new MyMove();
+        MyMove result = new MyMove()
+                .condition(Util.isGroupMovingCondition(2).negate());
 
         boolean two = false, three = false;
 
@@ -146,12 +205,14 @@ public class GroupGenerator {
     }  
 
     public Point getCornerPointOfType(VehicleType type) {
-        Point point = new Point(1025, 1025);
-        for(MyVehicle veh : strategy.vehicleById.values())
-            if(veh.getType() == type)
-                if (veh.getX() < point.getX() || veh.getY() < point.getY())
-                    point.setLocation(veh.getX(), veh.getY());
+        MyVehicle v = strategy.vehicleById.values().stream()
+                .filter(veh -> veh.getType() == type)
+                .sorted(Comparator.comparingDouble(MyVehicle::getX).thenComparing(Comparator.comparingDouble(MyVehicle::getY)))
+                .findFirst().get();
+        Point point = new Point((int)v.getX(), (int)v.getY());
 
+        if(Util.getIdxByCoord(point.x) == -1)
+            getCornerPointOfType(type);
         point.setLocation(Util.getIdxByCoord(point.x),
                 Util.getIdxByCoord(point.y));
         return point;
