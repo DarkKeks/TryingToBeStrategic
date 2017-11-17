@@ -50,19 +50,18 @@ public class GroupGenerator {
 
     private void addUniteMoves(MyMove move) {
         MyMove result = new MyMove()
-                .condition(Util.isGroupMovingCondition(1).negate())
-                .clearAndSelect(1)
-                .next(new MyMove()
-                        .scale(0, 0, 1.5));
+                .condition(Util.isGroupMovingCondition(1).negate());
 
         strategy.vehicleById.values()
                 .stream()
                 .filter(veh -> !veh.enemy)
                 .filter(Util.distinctByKey(MyVehicle::getY))
                 .sorted((a, b) -> Double.compare(b.getY(), a.getY()))
-                .forEach(veh -> {
-                    )
-                });
+                .forEach(veh ->
+                    result.last().next(new MyMove()
+                            .clearAndSelect(0, veh.getY() - 1, 1024, veh.getY() +  1)
+                            .next(new MyMove().move(0, (veh.getY() - 119) / 1.5)))
+                );
 
         move.last().next(result);
     }

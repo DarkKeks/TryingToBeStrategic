@@ -99,7 +99,11 @@ public class MyMove {
         return clearAndSelect(type).next(new MyMove().move(x, y));
     }
 
-    public MyMove clearAndSelect(int left, int top, int right, int bottom, VehicleType type) {
+    public MyMove clearAndSelect(double left, double top, double right, double bottom) {
+        return clearAndSelect(left, top, right, bottom, null);
+    }
+
+    public MyMove clearAndSelect(double left, double top, double right, double bottom, VehicleType type) {
         move.setAction(ActionType.CLEAR_AND_SELECT);
         move.setLeft(left);
         move.setRight(right);
