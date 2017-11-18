@@ -1,16 +1,17 @@
 import javafx.util.Pair;
-import model.Vehicle;
 import model.VehicleType;
 
 import java.awt.*;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class GroupGenerator {
 
+    VehicleType allTypes[] = {VehicleType.TANK, VehicleType.IFV, VehicleType.ARRV, VehicleType.FIGHTER, VehicleType.HELICOPTER};
     VehicleType surfaceTypes[] = {VehicleType.TANK, VehicleType.IFV, VehicleType.ARRV};
-    VehicleType skyTypes[] = {VehicleType.HELICOPTER, VehicleType.FIGHTER};
+    VehicleType skyTypes[] = {VehicleType.FIGHTER, VehicleType.HELICOPTER};
 
     public MyStrategy strategy;
 
@@ -35,49 +36,52 @@ public class GroupGenerator {
         }
 
         strategy.movementManager.add(new MyMove()
+                .clearAndSelect(0, 0, 1024, 1024)
+                .next(new MyMove()
+                        .assign(Util.SANDWICH)));
+
+        strategy.movementManager.add(new MyMove()
                 .clearAndSelect(surfaceTypes[0])
                 .next(new MyMove()
                         .addToSelection(surfaceTypes[1])
                         .next(new MyMove()
                                 .addToSelection(surfaceTypes[2])
                                 .next(new MyMove()
-                                        .assign(1)))));
+                                        .assign(Util.SURFACE)))));
 
-        MyMove getSkyAway = new MyMove()
+        strategy.movementManager.add(new MyMove()
                 .clearAndSelect(skyTypes[0])
                 .next(new MyMove()
                         .addToSelection(skyTypes[1])
                         .next(new MyMove()
-                                .assign(2)
-                                .next(new MyMove()
-                                        .generator(strategy -> {
-                                            MyMove res = new MyMove();
-                                            for (VehicleType type : skyTypes) {
-                                                Point p = getCornerPointOfType(type);
-                                                if(p.y == 1) res.last().next(new MyMove()
-                                                                .clearSelectMove(type, 0, Util.DIST_BETW_GROUPS));
-                                            }
-                                            return res;
-                                        }))));
-        strategy.movementManager.add(getSkyAway);
+                                .assign(Util.SKY))));
+
 
         MyMove move = addPositionMoves(surface, sky);
-
         addUniteMoves(move);
+
+        move.last().next(new MyMove()
+                .condition(Util.isGroupMovingCondition(Util.SANDWICH).negate())
+                .clearAndSelect(Util.SANDWICH)
+                .next(new MyMove()
+                        .scale(Util.CENTER_POINT, Util.CENTER_POINT, 0.1, Util.SANDWICH_MOVEMENT_SPEED)
+                        .next(new MyMove()
+                                .condition(Util.isGroupMovingCondition(Util.SANDWICH).negate())
+                                .move(900, 900, Util.SANDWICH_MOVEMENT_SPEED))));
 
         strategy.movementManager.add(move);
     }
 
     private void addUniteMoves(MyMove move) {
+        // SPLIT
         MyMove res = new MyMove()
-                .condition(Util.isGroupMovingCondition(1).negate())
+                .condition(Util.isGroupMovingCondition(Util.SANDWICH).negate())
                 .generator(strategy -> {
                     final MyMove[] result = new MyMove[1];
                     final boolean[] first = {true};
                     strategy.vehicleById.values()
                             .stream()
                             .filter(veh -> !veh.enemy)
-                            .filter(veh -> veh.type == surfaceTypes[0] || veh.type == surfaceTypes[1] || veh.type == surfaceTypes[2])
                             .filter(Util.distinctByKey(MyVehicle::getY))
                             .sorted((a, b) -> Double.compare(Math.abs(b.getY() - Util.CENTER_POINT), Math.abs(a.getY() - Util.CENTER_POINT)))
                             .forEach(veh -> {
@@ -92,43 +96,60 @@ public class GroupGenerator {
                             });
                     return result[0];
                 });
+        // TILT
         res.last().next(new MyMove()
-                .condition(Util.isGroupMovingCondition(1).negate()));
+                .condition(Util.isGroupMovingCondition(Util.SANDWICH).negate()));
         int i = 0;
-        for(VehicleType type : surfaceTypes) {
-            res.last().next(new MyMove()
-                    .clearSelectMove(type, 0, (1.0 - i) * 4.5));
-            i++;
-        }
+        for(VehicleType type : surfaceTypes)
+            res.last().next(new MyMove().clearSelectMove(type, 0, (1.0 - i++) * 4.5));
+        i = 0;
+        for(VehicleType type : skyTypes)
+            res.last().next(new MyMove().clearSelectMove(type, 0, (1.0 - i++) * 4.5));
+        // MERGE
         res.last().next(new MyMove()
-                .condition(Util.isGroupMovingCondition(1).negate())
+                .condition(Util.isGroupMovingCondition(Util.SANDWICH).negate())
                 .generator(strategy -> {
                     MyMove result = new MyMove();
-                    for(VehicleType type : surfaceTypes) {
+                    for(VehicleType type : allTypes) {
                         Point p = getCornerPointOfType(type);
                         result.last().next(new MyMove()
                                 .clearSelectMove(type, Util.getCoordByIdx(1) - Util.getCoordByIdx(p.x), 0));
                     }
                     return result;
                 }));
-        res.last().next(new MyMove()
-                .condition(Util.isGroupMovingCondition(1).negate())
-                .clearAndSelect(1)
-                .next(new MyMove()
-                        .scale(Util.CENTER_POINT, Util.CENTER_POINT, 0.1)
-                        .next(new MyMove()
-                                .condition(Util.isGroupMovingCondition(1).negate())
-                                .move(900, 900, 0.2)
-                                .next(new MyMove()
-                                        .clearSelectMove(2, 900, 900, 0.3)))));
         move.last().next(res);
     }
 
     private MyMove addPositionMoves(Map<VehicleType, Pair<Integer, Integer>> surface,
                                   Map<VehicleType, Pair<Integer, Integer>> sky) {
-        MyMove result = new MyMove()
-                .condition(Util.isGroupMovingCondition(2).negate());
+        MyMove result = new MyMove();
 
+        addSkyMoves(result, sky);
+        addSurfaceMoves(result, surface);
+
+        return result;
+    }
+
+    private void addSkyMoves(MyMove result, Map<VehicleType, Pair<Integer, Integer>> sky) {
+        if(Objects.equals(sky.get(skyTypes[0]).getValue(), sky.get(skyTypes[1]).getValue())) {
+            int c = (sky.get(skyTypes[0]).getValue() != 2 ? 1 : -1);
+            result.clearSelectMove(skyTypes[0], c * Util.DIST_BETW_GROUPS, 0);
+        }
+
+        boolean first = true;
+        for(VehicleType type : skyTypes) {
+            if(sky.get(type).getValue() != 1) {
+                MyMove move = new MyMove()
+                        .clearSelectMove(type, 0, (1 - sky.get(type).getValue()) * Util.DIST_BETW_GROUPS);
+                if(first) move.condition(Util.isGroupMovingCondition(Util.SKY).negate());
+                first = false;
+
+                result.last().next(move);
+            }
+        }
+    }
+
+    public void addSurfaceMoves(MyMove result, Map<VehicleType, Pair<Integer, Integer>> surface) {
         boolean two = false, three = false;
 
         int cnt[] = new int[3];
@@ -194,15 +215,13 @@ public class GroupGenerator {
             if(surface.get(type).getValue() != 1) {
                 MyMove move = new MyMove()
                         .clearSelectMove(type, 0, (1 - surface.get(type).getValue()) * Util.DIST_BETW_GROUPS);
-                if(first) move.condition(Util.isGroupMovingCondition(1).negate());
+                if(first) move.condition(Util.isGroupMovingCondition(Util.SURFACE).negate());
                 first = false;
 
                 result.last().next(move);
             }
         }
-
-        return result;
-    }  
+    }
 
     public Point getCornerPointOfType(VehicleType type) {
         MyVehicle v = strategy.vehicleById.values().stream()
@@ -211,8 +230,6 @@ public class GroupGenerator {
                 .findFirst().get();
         Point point = new Point((int)v.getX(), (int)v.getY());
 
-        if(Util.getIdxByCoord(point.x) == -1)
-            getCornerPointOfType(type);
         point.setLocation(Util.getIdxByCoord(point.x),
                 Util.getIdxByCoord(point.y));
         return point;

@@ -10,6 +10,12 @@ public class Util {
     public static final int DIST_BETW_GROUPS = 74;
     public static final int CENTER_POINT = 119;
 
+    public static final int SANDWICH = 1;
+    public static final int SURFACE = 2;
+    public static final int SKY = 3;
+
+    public static final double SANDWICH_MOVEMENT_SPEED = 0.18;
+
     public static int getIdxByCoord(int coord) {
         switch (coord) {
             case 18: return 0;

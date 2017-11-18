@@ -210,6 +210,11 @@ public class MyMove {
         return rotate(x, y, angle, 1e9, 1e9);
     }
 
+    public MyMove scale(double x, double y, double factor, double maxSpeed) {
+        move.setMaxSpeed(maxSpeed);
+        return scale(x, y, factor);
+    }
+
     public MyMove scale(double x, double y, double factor) {
         move.setAction(ActionType.SCALE);
         move.setX(x);
