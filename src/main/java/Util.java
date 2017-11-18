@@ -36,7 +36,7 @@ public class Util {
     public static Predicate<MyStrategy> isGroupMovingCondition(final int groupId) {
         return (strategy) -> {
             for(MyVehicle veh : MyStrategy.MY_STRATEGY.vehicleByGroup.get(groupId).values())
-                if(veh.isMoving())
+                if(!veh.enemy && veh.isMoving())
                     return true;
             return false;
         };
@@ -45,7 +45,7 @@ public class Util {
     public static Predicate<MyStrategy> isTypeMovingCondition(final VehicleType type) {
         return (strategy) -> {
             for(MyVehicle veh : MyStrategy.MY_STRATEGY.vehicleByType.get(type).values())
-                if(veh.isMoving())
+                if(!veh.enemy && veh.isMoving())
                     return true;
             return false;
         };
