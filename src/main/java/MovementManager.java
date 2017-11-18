@@ -2,12 +2,6 @@ import java.util.*;
 
 public class MovementManager {
     public static int time = 0;
-    public static Deque<Integer> movements = new ArrayDeque<>();
-    static {
-        for(int i = 0; i < 12; ++i) {
-            movements.add(-100);
-        }
-    }
 
     public TreeSet<MyMove> delayedMoves = new TreeSet<>(Comparator.comparingInt(a -> a.addTime));
 
@@ -23,7 +17,7 @@ public class MovementManager {
     }
 
     public boolean canMove() {
-        return delayedMoves.size() > 0 && canDoMove();
+        return delayedMoves.size() > 0 && strategy.player.getRemainingActionCooldownTicks() == 0;
     }
 
     public void move() {
@@ -33,7 +27,6 @@ public class MovementManager {
                     if(myMove.hasGenerator)
                         myMove.applyGenerator();
                     myMove.apply(strategy.move);
-                    registerMovement();
                     if (myMove.hasNext) {
                         MyMove next = myMove.next;
                         next.addTime = (myMove.delay == 0 ? myMove.addTime : time++);
@@ -49,14 +42,5 @@ public class MovementManager {
                 }
             }
         }
-    }
-
-    public void registerMovement() {
-        movements.poll();
-        movements.add(strategy.world.getTickIndex());
-    }
-
-    public boolean canDoMove() {
-        return this.strategy.world.getTickIndex() - movements.getFirst() >= 60;
     }
 }
