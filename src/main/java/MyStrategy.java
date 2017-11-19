@@ -6,6 +6,9 @@ public final class MyStrategy implements Strategy {
 
     public static MyStrategy MY_STRATEGY;
 
+    public boolean sandwichReady;
+    public SandwichController sandwichController;
+
     private Random random;
 
     public Player player;
@@ -37,6 +40,7 @@ public final class MyStrategy implements Strategy {
             System.out.println(game.getRandomSeed());
             random = new Random(game.getRandomSeed());
             movementManager = new MovementManager(this);
+            sandwichController = new SandwichController(this);
             groupByType.put(VehicleType.ARRV, 2);
             groupByType.put(VehicleType.TANK, 3);
             groupByType.put(VehicleType.IFV, 4);
@@ -50,8 +54,7 @@ public final class MyStrategy implements Strategy {
         initMove();
         if(isFirstTick) new GroupGenerator(this);
 
-        if(!movementManager.canMove())
-            process();
+        process();
         movementManager.move();
     }
 
@@ -96,6 +99,7 @@ public final class MyStrategy implements Strategy {
     }
 
     private void process() {
-
+        if(sandwichReady)
+            sandwichController.tick();
     }
 }

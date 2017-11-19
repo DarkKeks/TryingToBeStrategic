@@ -60,6 +60,8 @@ public class GroupGenerator {
         MyMove move = addPositionMoves(surface, sky);
         addUniteMoves(move);
 
+        move.last().onApply(() -> strategy.sandwichReady = true);
+
         move.last().next(new MyMove()
                 .condition(Util.isGroupMovingCondition(Util.SANDWICH).negate())
                 .clearAndSelect(Util.SANDWICH)
@@ -131,8 +133,8 @@ public class GroupGenerator {
     }
 
     private void addSkyMoves(MyMove result, Map<VehicleType, Pair<Integer, Integer>> sky) {
-        if(Objects.equals(sky.get(skyTypes[0]).getValue(), sky.get(skyTypes[1]).getValue())) {
-            int c = (sky.get(skyTypes[0]).getValue() != 2 ? 1 : -1);
+        if(Objects.equals(sky.get(skyTypes[0]).getKey(), sky.get(skyTypes[1]).getKey())) {
+            int c = (sky.get(skyTypes[0]).getKey() != 2 ? 1 : -1);
             result.clearSelectMove(skyTypes[0], c * Util.DIST_BETW_GROUPS, 0);
         }
 
@@ -224,14 +226,12 @@ public class GroupGenerator {
     }
 
     public Point getCornerPointOfType(VehicleType type) {
-        MyVehicle v = strategy.vehicleById.values().stream()
-                .filter(veh -> veh.getType() == type)
-                .sorted(Comparator.comparingDouble(MyVehicle::getX).thenComparing(Comparator.comparingDouble(MyVehicle::getY)))
-                .findFirst().get();
-        Point point = new Point((int)v.getX(), (int)v.getY());
+        Point point = new Point(1e9, 1e9);
+        for(MyVehicle veh : strategy.vehicleByType.get(type).values()) {
+            if(!veh.enemy && point.compareTo(veh.getX(), veh.getY())) {
+            }
+        }
 
-        point.setLocation(Util.getIdxByCoord(point.x),
-                Util.getIdxByCoord(point.y));
-        return point;
+        return new Point(v.getX(), v.getY());
     }
 }

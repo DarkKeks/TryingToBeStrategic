@@ -20,6 +20,8 @@ public class MyMove {
     public boolean hasGenerator;
     public Function<MyStrategy, MyMove> generator;
 
+    public Runnable onApply = () -> {};
+
     public int retryDelay = 0;
     public int minTick = 0;
     public boolean applied = false;
@@ -41,6 +43,11 @@ public class MyMove {
     public boolean canBeApplied() {
         return !applied && condition.test(MyStrategy.MY_STRATEGY) &&
                 minTick <= MyStrategy.MY_STRATEGY.world.getTickIndex();
+    }
+
+    public MyMove onApply(Runnable onApply) {
+        this.onApply = onApply;
+        return this;
     }
 
     public MyMove retryDelay(int delay) {
