@@ -35,7 +35,7 @@ public class Util {
     }
 
     public static <T> Predicate<T> distinctByKey(Function<? super T, ?> keyExtractor) {
-        Map<Object,Boolean> seen = new HashMap<>();
+        Map<Object, Boolean> seen = new HashMap<>();
         return t -> seen.putIfAbsent(keyExtractor.apply(t), Boolean.TRUE) == null;
     }
 

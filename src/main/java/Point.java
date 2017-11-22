@@ -43,6 +43,11 @@ public class Point {
     }
 
     private int compareDouble(double a, double b) {
-        return (Math.abs(a - b) < EPS ? 0 : (a - b < 0 ? 1 : -1));
+        return (Math.abs(a - b) < EPS ? 0 : (a > b ? 1 : -1));
+    }
+
+    @Override
+    public String toString() {
+        return "(" + Double.toString(this.x) + ", " + Double.toString(this.y) + ")";
     }
 }
