@@ -1,6 +1,6 @@
 package raic;
 
-import model.VehicleType;
+import raic.model.VehicleType;
 
 import java.awt.Color;
 import java.io.IOException;
@@ -99,9 +99,9 @@ public class RewindClient {
      * @param remCooldown -
      * @param maxCooldown -
      */
-    void livingUnit(double x, double y, double r, int hp, int maxHp,
-                    Side side, double course, int unitType,
-                    int remCooldown, int maxCooldown, boolean selected) {
+    public void livingUnit(double x, double y, double r, int hp, int maxHp,
+                           Side side, double course, int unitType,
+                           int remCooldown, int maxCooldown, boolean selected) {
         send(String.format(
                 "{\"type\": \"unit\", \"x\": %f, \"y\": %f, \"r\": %f, \"hp\": %d, \"max_hp\": %d, \"enemy\": %d, \"unit_type\":%d, \"course\": %.3f," +
                         "\"rem_cooldown\":%d, \"cooldown\":%d, \"selected\":%d }",

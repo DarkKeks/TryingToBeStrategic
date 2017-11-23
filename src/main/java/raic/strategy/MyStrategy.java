@@ -1,5 +1,6 @@
 package raic.strategy;
 
+import raic.RewindClient;
 import raic.model.*;
 import java.util.*;
 

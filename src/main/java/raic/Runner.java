@@ -1,7 +1,7 @@
 package raic;
 
-import model.*;
-import strategy.MyStrategy;
+import raic.model.*;
+import raic.strategy.MyStrategy;
 
 import java.io.IOException;
 import java.util.Locale;

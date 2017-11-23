@@ -37,7 +37,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>Runner</mainClass>
+                            <mainClass>raic.Runner</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
