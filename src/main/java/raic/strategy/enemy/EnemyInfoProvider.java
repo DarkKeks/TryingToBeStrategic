@@ -17,18 +17,24 @@ public class EnemyInfoProvider {
     }
 
     public void update() {
-        if(strategy.world.getTickIndex() - Util.GROUP_UPDATE_TIMEOUT > lastUpdate) {
+        if(Util.delayCheck(Util.GROUP_UPDATE_TIMEOUT, lastUpdate)) {
             lastUpdate = strategy.world.getTickIndex();
+
             forceUpdate();
         }
     }
 
     public void forceUpdate() {
         group = new Group();
-        for(MyVehicle veh : strategy.vehicleById.values()) {
-            if(veh.enemy)
+        for(MyVehicle veh : strategy.vehicles) {
+            if(veh.alive && veh.enemy)
                 group.add(veh);
         }
+    }
+
+    public Group getGroup() {
+        if(group == null) forceUpdate();
+        return group;
     }
 
     public Point getAttackPoint() {

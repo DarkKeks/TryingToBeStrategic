@@ -12,7 +12,9 @@ public class SandwichController {
     private Vec2D orientation;
 
     public int lastOrientationTick = -Util.SANDWICH_ORIENTATION_DELAY;
-    private int lastMoveTick = -Util.SANDWICH_MOVE_DELAY;
+    public int lastMoveTick = -Util.SANDWICH_MOVE_DELAY;
+    public int lastAttackMoveUpdateTick = -Util.ATTACK_MODE_UPDATE_DELAY;
+
     private boolean orienting = false;
 
     public SandwichController(MyStrategy strategy) {
@@ -25,18 +27,37 @@ public class SandwichController {
     public void tick() {
         provider.update();
         Point attackPoint = provider.getAttackPoint();
-        if(!orienting && Util.delayCheck(Util.SANDWICH_ORIENTATION_DELAY, lastOrientationTick)) {
-            lastOrientationTick = strategy.world.getTickIndex();
+        if(!orienting) {
+            if(Util.delayCheck(Util.SANDWICH_ORIENTATION_DELAY, lastOrientationTick)) {
+                lastOrientationTick = strategy.world.getTickIndex();
 
-            updateCenterPoint();
-            orient(attackPoint);
-        }
-        if(!orienting && centerPoint.sqDist(attackPoint) > Util.ATTACK_MODE_THRESHOLD &&
-                Util.delayCheck(Util.SANDWICH_MOVE_DELAY, lastMoveTick)) {
-            lastMoveTick = strategy.world.getTickIndex();
+                updateCenterPoint();
+                orient(attackPoint);
+            }
+            if(centerPoint.sqDist(attackPoint) > Util.ATTACK_MODE_THRESHOLD)
+                if(Util.delayCheck(Util.SANDWICH_MOVE_DELAY, lastMoveTick)) {
+                    lastMoveTick = strategy.world.getTickIndex();
 
-            updateCenterPoint();
-            move(attackPoint);
+                    updateCenterPoint();
+                    move(attackPoint);
+                }
+            } else {
+                double closestDist = getClosestDist();
+
+                MyMove move;
+                if(closestDist * 2 > strategy.game.getIfvGroundAttackRange()) {
+                    // move back
+                } else {
+                    // move forward
+                }
+
+                if(strategy.lastSelection.getGroup() != Util.SANDWICH)
+                    strategy.movementManager.add(new MyMove()
+                            .clearAndSelect(Util.SANDWICH)
+                            .next(move));
+                else
+                    strategy.movementManager.add(move);
+            }
         }
     }
 
@@ -68,6 +89,16 @@ public class SandwichController {
                                                 .condition(Util.isGroupMovingCondition(Util.SANDWICH).negate())
                                                 .onApply(() -> this.orienting = false))))));
         orienting = true;
+    }
+
+    private double getClosetsDist() {
+        double dist = 1e9;
+        for(MyVehicle a : vehicleByGroup.get(Util.SANDWICH)) {
+            for(MyVehicle b : provider.getGroup().vehicles) {
+                dist = min(dist, a.getSquaredDistanceTo(b.getX(), b.getY()));
+            }
+        }
+        return dist;
     }
 
     private void updateCenterPoint() {

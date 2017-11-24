@@ -79,9 +79,9 @@ public class  GroupGenerator {
                 .generator(strategy -> {
                     final MyMove[] result = new MyMove[1];
                     final boolean[] first = {true};
-                    strategy.vehicleById.values()
+                    strategy.vehiles
                             .stream()
-                            .filter(veh -> !veh.enemy)
+                            .filter(veh -> veh.alive && !veh.enemy)
                             .filter(Util.distinctByKey((veh) -> Math.round(veh.getY())))
                             .sorted((a, b) -> Double.compare(Math.abs(b.getY() - Util.CENTER_POINT), Math.abs(a.getY() - Util.CENTER_POINT)))
                             .forEach(veh -> {
@@ -225,8 +225,8 @@ public class  GroupGenerator {
 
     public Point getCornerPointOfType(VehicleType type) {
         Point point = new Point(1e9, 1e9);
-        for(MyVehicle veh : strategy.vehicleByType.get(type).values())
-            if(!veh.enemy && point.compareTo(veh.getX(), veh.getY()) > 0)
+        for(MyVehicle veh : strategy.vehicleByType.get(type))
+            if(veh.alive && !veh.enemy && point.compareTo(veh.getX(), veh.getY()) > 0)
                 point.set(veh.getX(), veh.getY());
         return point;
     }

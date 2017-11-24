@@ -28,7 +28,13 @@ public class MovementManager {
                 if(myMove.canBeApplied()) {
                     if(myMove.hasGenerator)
                         myMove.applyGenerator();
+
+                    if(myMove.action == ActionType.CLEAR_AND_SELECT)
+                        myMove.apply(strategy.lastSelection);
+                    
                     myMove.apply(strategy.move);
+                    myMove.onApply.run();
+
                     if (myMove.hasNext) {
                         MyMove next = myMove.next;
                         next.addTime = (myMove.delay == 0 ? myMove.addTime : time++);

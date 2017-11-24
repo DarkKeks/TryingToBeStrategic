@@ -12,6 +12,8 @@ public final class MyStrategy implements Strategy {
     public boolean sandwichReady;
     public SandwichController sandwichController;
 
+    public Move lastSelection = new Move();
+
     private Random random;
 
     public Player player;
@@ -23,8 +25,9 @@ public final class MyStrategy implements Strategy {
     public Map<VehicleType, Integer> groupByType = new HashMap<>();
 
     public Map<Long, MyVehicle> vehicleById = new HashMap<>();
-    public DefaultHashMap<VehicleType, Map<Long, MyVehicle> > vehicleByType = new DefaultHashMap<>(HashMap::new);
-    public DefaultHashMap<Integer, Map<Long, MyVehicle> > vehicleByGroup = new DefaultHashMap<>(HashMap::new);
+    public ArrayList<MyVehicle> vehicles = new ArrayList<>();
+    public DefaultHashMap<VehicleType, ArrayList<MyVehicle> > vehicleByType = new DefaultHashMap<>(ArrayList::new);
+    public DefaultHashMap<Integer, ArrayList<MyVehicle> > vehicleByGroup = new DefaultHashMap<>(ArrayList::new);
 
     public MyStrategy() {
         MY_STRATEGY = this;
@@ -81,21 +84,21 @@ public final class MyStrategy implements Strategy {
     private void initMove() {
         for(Vehicle veh : world.getNewVehicles()) {
             MyVehicle myVeh = new MyVehicle(veh);
+            if(!vehicleById.containsKey(veh.getId())) {
+                vehicles.add(myVeh);
+                vehicleByType.get(veh.getType()).add(myVeh);
+            }
             vehicleById.put(veh.getId(), myVeh);
-            vehicleByType.get(veh.getType()).put(veh.getId(), myVeh);
         }
 
         for(VehicleUpdate update : world.getVehicleUpdates()) {
             long id = update.getId();
             if(update.getDurability() > 0) {
                 MyVehicle veh = vehicleById.get(id);
+                for(int group : update.getGroups())
+                    if(!veh.isInGroup(group)) vehicleByGroup.add(veh);
                 veh.update(update);
-                for(int group : update.getGroups())
-                    vehicleByGroup.get(group).put(id, veh);
             } else {
-                for(int group : update.getGroups())
-                    vehicleByGroup.get(group).remove(id);
-                vehicleByType.get(vehicleById.get(id).getType()).remove(id);
                 vehicleById.remove(id);
             }
         }

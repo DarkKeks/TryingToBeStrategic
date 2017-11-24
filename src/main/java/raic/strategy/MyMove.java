@@ -116,7 +116,6 @@ public class MyMove {
         move.setFacilityId(this.move.getFacilityId());
 
         applied = true;
-        onApply.run();
     }
 
     public MyMove clearSelectAssignMove(VehicleType type, int groupId, double x, double y) {
