@@ -39,6 +39,10 @@ public class Point {
         return (int) Math.round(y);
     }
 
+    public double sqDist(Point point) {
+        return (this.x - point.getX()) * (this.x - point.getX()) + (this.y - point.getY()) * (this.y - point.getY());
+    }
+
     public int compareTo(double x, double y) {
         if(compareDouble(this.x, x) == 0) return compareDouble(this.y, y);
         return compareDouble(this.x, x);

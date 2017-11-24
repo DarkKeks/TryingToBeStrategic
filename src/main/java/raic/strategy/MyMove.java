@@ -116,6 +116,7 @@ public class MyMove {
         move.setFacilityId(this.move.getFacilityId());
 
         applied = true;
+        onApply.run();
     }
 
     public MyMove clearSelectAssignMove(VehicleType type, int groupId, double x, double y) {
@@ -216,7 +217,7 @@ public class MyMove {
     }
 
     public MyMove rotate(double x, double y, double angle) {
-        return rotate(x, y, angle, 1e9, 1e9);
+        return rotate(x, y, angle, 0.0, 0.0);
     }
 
     public MyMove scale(double x, double y, double factor, double maxSpeed) {

@@ -4,7 +4,7 @@ import raic.model.VehicleType;
 
 import java.util.*;
 
-public class GroupGenerator {
+public class  GroupGenerator {
 
     VehicleType allTypes[] = {VehicleType.TANK, VehicleType.IFV, VehicleType.ARRV, VehicleType.FIGHTER, VehicleType.HELICOPTER};
     VehicleType surfaceTypes[] = {VehicleType.TANK, VehicleType.IFV, VehicleType.ARRV};
@@ -59,16 +59,15 @@ public class GroupGenerator {
         MyMove move = addPositionMoves(surface, sky);
         addUniteMoves(move);
 
-        move.last().onApply(() -> strategy.sandwichReady = true);
-
         move.last().next(new MyMove()
                 .condition(Util.isGroupMovingCondition(Util.SANDWICH).negate())
                 .clearAndSelect(Util.SANDWICH)
                 .next(new MyMove()
                         .scale(Util.CENTER_POINT, Util.CENTER_POINT, 0.1, Util.SANDWICH_MOVEMENT_SPEED)
                         .next(new MyMove()
-                                .condition(Util.isGroupMovingCondition(Util.SANDWICH).negate())
-                                .move(900, 900, Util.SANDWICH_MOVEMENT_SPEED))));
+                                .condition(Util.isGroupMovingCondition(Util.SANDWICH).negate()))));
+
+        move.last().onApply(() -> strategy.sandwichReady = true);
 
         strategy.movementManager.add(move);
     }
@@ -132,16 +131,16 @@ public class GroupGenerator {
     }
 
     private void addSkyMoves(MyMove result, Map<VehicleType, Point> sky) {
-        if(Objects.equals(sky.get(skyTypes[0]).intX(), sky.get(skyTypes[1]).intX())) {
-            int c = (sky.get(skyTypes[0]).intX() != 2 ? 1 : -1);
-            result.clearSelectMove(skyTypes[0], c * Util.DIST_BETW_GROUPS, 0);
+        if(Objects.equals(sky.get(skyTypes[0]).intX(), sky.get(skyTypes[1]).intX())) { // В одном столбце
+            int c = (sky.get(skyTypes[0]).intX() != 2 ? 1 : -1);                       // Если 0 или 1 -> вправо, иначе влево
+            result.clearSelectMove(skyTypes[0], c * Util.DIST_BETW_GROUPS, 0);   // Выделить + подвинуть
         }
 
         boolean first = true;
         for(VehicleType type : skyTypes) {
-            if(sky.get(type).intY() != 1) {
+            if(sky.get(type).intY() != 1) {                                            // Если не средний ряд
                 MyMove move = new MyMove()
-                        .clearSelectMove(type, 0, (1 - sky.get(type).intY()) * Util.DIST_BETW_GROUPS);
+                        .clearSelectMove(type, 0, (1 - sky.get(type).intY()) * Util.DIST_BETW_GROUPS); // Выделить подвинуть
                 if(first) move.condition(Util.isGroupMovingCondition(Util.SKY).negate());
                 first = false;
 

@@ -17,8 +17,11 @@ public class Util {
     public static final int SKY = 3;
 
     public static final int SANDWICH_ORIENTATION_DELAY = 300;
+    public static final int SANDWICH_MOVE_DELAY = 50;
+    public static final int GROUP_UPDATE_TIMEOUT = 100;
 
     public static final double SANDWICH_MOVEMENT_SPEED = 0.18;
+    public static final double ATTACK_MODE_THRESHOLD = 50 * 50;
 
     public static int getIdxByCoord(int coord) {
         switch (coord) {
@@ -61,4 +64,11 @@ public class Util {
         };
     }
 
+    public static double absMin(double a, double b) {
+        return Math.abs(a) < Math.abs(b) ? a : b;
+    }
+
+    public static boolean delayCheck(int delay, int last) {
+        return last + delay <= MyStrategy.MY_STRATEGY.world.getTickIndex();
+    }
 }

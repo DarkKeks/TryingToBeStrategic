@@ -39,6 +39,7 @@ public class MyVehicle {
     public int lastUpdateTick;
     public int lastPositionUpdateTick;
     public boolean enemy;
+    public boolean alive;
 
     public MyVehicle(Vehicle veh) {
         this.id = veh.getId();
@@ -68,12 +69,14 @@ public class MyVehicle {
 
         this.lastUpdateTick = this.lastPositionUpdateTick = MyStrategy.MY_STRATEGY.world.getTickIndex();
         this.enemy = this.playerId != MyStrategy.MY_STRATEGY.player.getId();
+        this.alive = true;
     }
 
     public void update(VehicleUpdate vehicleUpdate) {
         this.lastUpdateTick = MyStrategy.MY_STRATEGY.world.getTickIndex();
         if(vehicleUpdate.getX() != this.x || vehicleUpdate.getY() != this.y) 
             this.lastPositionUpdateTick = MyStrategy.MY_STRATEGY.world.getTickIndex();
+        if(vehicleUpdate.getDurability() <= 0) this.alive = false;
 
         this.x = vehicleUpdate.getX();
         this.y = vehicleUpdate.getY();
