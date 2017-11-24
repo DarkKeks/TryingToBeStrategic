@@ -86,7 +86,7 @@ public class MyVehicle {
         this.groups = vehicleUpdate.getGroups();
     }
 
-    public isInGroup(int group) {
+    public boolean isInGroup(int group) {
         for(int g : groups)
             if(group == g) return true;
         return false;

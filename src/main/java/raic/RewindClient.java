@@ -42,32 +42,32 @@ public class RewindClient {
     /**
      * Should be send on end of move function all turn primitives can be rendered after that point
      */
-    void endFrame() {
+    public void endFrame() {
         send("{\"type\":\"end\"}");
     }
 
-    void circle(double x, double y, double r, Color color) {
+    public void circle(double x, double y, double r, Color color) {
         send(String.format("{\"type\": \"circle\", \"x\": %f, \"y\": %f, \"r\": %f, \"color\": %d}", x, y, r, color.getRGB()));
     }
 
-    void rect(double x1, double y1, double x2, double y2, Color color) {
+    public void rect(double x1, double y1, double x2, double y2, Color color) {
         send(String.format("{\"type\": \"rectangle\", \"x1\": %f, \"y1\": %f, \"x2\": %f, \"y2\": %f, \"color\": %d}", x1, y1, x2, y2, color.getRGB()));
     }
 
-    void line(double x1, double y1, double x2, double y2, Color color) {
+    public void line(double x1, double y1, double x2, double y2, Color color) {
         send(String.format("{\"type\": \"line\", \"x1\": %f, \"y1\": %f, \"x2\": %f, \"y2\": %f, \"color\": %d}", x1, y1, x2, y2, color.getRGB()));
     }
 
-    void livingUnit(double x, double y, double r, int hp, int maxHp,
+    public void livingUnit(double x, double y, double r, int hp, int maxHp,
                     Side side) {
         livingUnit(x, y, r, hp, maxHp, side, 0, 0, 0, 0, false);
     }
 
-    void areaDescription(int cellX, int cellY, AreaType areaType) {
+    public void areaDescription(int cellX, int cellY, AreaType areaType) {
         send(String.format("{\"type\": \"area\", \"x\": %d, \"y\": %d, \"area_type\": %d}", cellX, cellY, areaType.areaType));
     }
 
-    void close() {
+    public void close() {
         try {
             outputStream.close();
         } catch (IOException e) {

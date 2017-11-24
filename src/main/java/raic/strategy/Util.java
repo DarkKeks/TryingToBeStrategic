@@ -22,7 +22,6 @@ public class Util {
     public static final int ATTACK_MODE_UPDATE_DELAY = 10;
 
     public static final double SANDWICH_MOVEMENT_SPEED = 0.18;
-    public static final double ATTACK_MODE_THRESHOLD = 50 * 50;
 
     public static int getIdxByCoord(int coord) {
         switch (coord) {
@@ -49,8 +48,8 @@ public class Util {
 
     public static Predicate<MyStrategy> isGroupMovingCondition(final int groupId) {
         return (strategy) -> {
-            for(MyVehicle veh : MyStrategy.MY_STRATEGY.vehicleByGroup.get(groupId).values())
-                if(!veh.enemy && veh.isMoving())
+            for(MyVehicle veh : MyStrategy.MY_STRATEGY.vehicleByGroup.get(groupId))
+                if(veh.alive && !veh.enemy && veh.isMoving())
                     return true;
             return false;
         };
@@ -58,8 +57,8 @@ public class Util {
 
     public static Predicate<MyStrategy> isTypeMovingCondition(final VehicleType type) {
         return (strategy) -> {
-            for(MyVehicle veh : MyStrategy.MY_STRATEGY.vehicleByType.get(type).values())
-                if(!veh.enemy && veh.isMoving())
+            for(MyVehicle veh : MyStrategy.MY_STRATEGY.vehicleByType.get(type))
+                if(veh.alive && !veh.enemy && veh.isMoving())
                     return true;
             return false;
         };

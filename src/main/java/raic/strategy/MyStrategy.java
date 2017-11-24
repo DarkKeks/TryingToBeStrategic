@@ -93,14 +93,14 @@ public final class MyStrategy implements Strategy {
 
         for(VehicleUpdate update : world.getVehicleUpdates()) {
             long id = update.getId();
+            MyVehicle veh = vehicleById.get(id);
             if(update.getDurability() > 0) {
-                MyVehicle veh = vehicleById.get(id);
                 for(int group : update.getGroups())
-                    if(!veh.isInGroup(group)) vehicleByGroup.add(veh);
-                veh.update(update);
+                    if(!veh.isInGroup(group)) vehicleByGroup.get(group).add(veh);
             } else {
                 vehicleById.remove(id);
             }
+            veh.update(update);
         }
     }
 

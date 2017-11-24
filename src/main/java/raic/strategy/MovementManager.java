@@ -1,5 +1,7 @@
 package raic.strategy;
 
+import raic.model.ActionType;
+
 import java.util.*;
 
 public class MovementManager {
@@ -29,7 +31,7 @@ public class MovementManager {
                     if(myMove.hasGenerator)
                         myMove.applyGenerator();
 
-                    if(myMove.action == ActionType.CLEAR_AND_SELECT)
+                    if(myMove.move.getAction() == ActionType.CLEAR_AND_SELECT)
                         myMove.apply(strategy.lastSelection);
                     
                     myMove.apply(strategy.move);

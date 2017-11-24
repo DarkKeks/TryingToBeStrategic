@@ -79,7 +79,7 @@ public class  GroupGenerator {
                 .generator(strategy -> {
                     final MyMove[] result = new MyMove[1];
                     final boolean[] first = {true};
-                    strategy.vehiles
+                    strategy.vehicles
                             .stream()
                             .filter(veh -> veh.alive && !veh.enemy)
                             .filter(Util.distinctByKey((veh) -> Math.round(veh.getY())))
