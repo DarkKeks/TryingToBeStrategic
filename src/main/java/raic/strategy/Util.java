@@ -17,8 +17,7 @@ public class Util {
     public static final int SKY = 3;
 
     public static final int SANDWICH_ORIENTATION_DELAY = 300;
-    public static final int SANDWICH_MOVE_DELAY = 50;
-    public static final int GROUP_UPDATE_TIMEOUT = 100;
+    public static final int GROUP_UPDATE_TIMEOUT = 10;
     public static final int ATTACK_MODE_UPDATE_DELAY = 10;
 
     public static final double SANDWICH_MOVEMENT_SPEED = 0.18;

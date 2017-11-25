@@ -9,7 +9,7 @@ public class SandwichController {
     public MyStrategy strategy;
     public EnemyInfoProvider provider;
 
-    private Point centerPoint;
+    public Point centerPoint;
     private Vec2D orientation;
 
     public int lastOrientationTick = -Util.SANDWICH_ORIENTATION_DELAY;
@@ -25,27 +25,27 @@ public class SandwichController {
     }
 
     public void tick() {
-        provider.update();
+        updateCenterPoint();
+        provider.update(centerPoint);
         Point attackPoint = provider.getAttackPoint();
         if(!orienting) {
             if(Util.delayCheck(Util.SANDWICH_ORIENTATION_DELAY, lastOrientationTick)) {
                 lastOrientationTick = strategy.world.getTickIndex();
 
-                updateCenterPoint();
                 orient(attackPoint);
             } else if(Util.delayCheck(Util.ATTACK_MODE_UPDATE_DELAY, lastAttackMoveUpdateTick)) {
                 lastAttackMoveUpdateTick = strategy.world.getTickIndex();
 
-                updateCenterPoint();
-
                 MyMove move;
                 double closestDist = getClosestDist();
                 if(closestDist * 2 > strategy.game.getIfvGroundAttackRange()) {
-                    move = new MyMove().move(attackPoint.getX() - centerPoint.getX(),
+                    move = new MyMove().move(
+                            attackPoint.getX() - centerPoint.getX(),
                             attackPoint.getY() - centerPoint.getY(),
                             Util.SANDWICH_MOVEMENT_SPEED);
                 } else {
-                    move = new MyMove().move(-(attackPoint.getX() - centerPoint.getX()),
+                    move = new MyMove().move(
+                            -(attackPoint.getX() - centerPoint.getX()),
                             -(attackPoint.getY() - centerPoint.getY()),
                             Util.SANDWICH_MOVEMENT_SPEED);
                 }
@@ -56,8 +56,18 @@ public class SandwichController {
                             .next(move));
                 else
                     strategy.movementManager.add(move);
+            } else if(strategy.player.getRemainingNuclearStrikeCooldownTicks() == 0) {
+                doNuke();
+            } else if(strategy.world.getOpponentPlayer().getNextNuclearStrikeTickIndex() != -1) {
+                goAwayFromNuke();
             }
         }
+    }
+
+    private void goAwayFromNuke() {
+    }
+
+    private void doNuke() {
     }
 
     private void orient(Point attackPoint) {
@@ -84,19 +94,14 @@ public class SandwichController {
         orienting = true;
     }
 
-    private Point m1, m2;
-
     private double getClosestDist() {
         double dist = 1e9;
-        m1 = new Point(0,0);
-        m2 = new Point(0,0);
         for(MyVehicle a : strategy.vehicleByGroup.get(Util.SANDWICH)) {
             if(!a.alive || a.type == VehicleType.HELICOPTER || a.type == VehicleType.FIGHTER) continue;
             for(MyVehicle b : provider.getGroup().vehicles) {
                 if(!b.alive || b.type == VehicleType.HELICOPTER || b.type == VehicleType.FIGHTER) continue;
                 double newDist = a.getSquaredDistanceTo(b.getX(), b.getY());
                 if(newDist < dist) {
-                    m1.set(a.getX(), a.getY()); m2.set(b.getX(), b.getY());
                     dist = newDist;
                 }
             }

@@ -2,6 +2,9 @@ package raic.strategy;
 
 import raic.RewindClient;
 import raic.model.*;
+import raic.strategy.enemy.Group;
+
+import java.awt.*;
 import java.util.*;
 
 @SuppressWarnings("WeakerAccess")
@@ -55,7 +58,7 @@ public final class MyStrategy implements Strategy {
 
         }
 
-        debugRender();
+        //debugRender();
 
         initMove();
         if(isFirstTick) new GroupGenerator(this);
@@ -104,8 +107,17 @@ public final class MyStrategy implements Strategy {
         }
     }
 
+    private Color[] color = new Color[]{Color.RED, Color.YELLOW, Color.GREEN, Color.MAGENTA, Color.BLUE, Color.BLACK};
+
     private void process() {
         if(sandwichReady)
             sandwichController.tick();
+
+        for(int i = 0; i < sandwichController.provider.groups.size(); ++i) {
+            Group group = sandwichController.provider.groups.get(i);
+            for(MyVehicle veh : group.vehicles) {
+                //RewindClient.getInstance().circle(veh.getX(), veh.getY(), 2.2, color[i % color.length]);
+            }
+        }
     }
 }
