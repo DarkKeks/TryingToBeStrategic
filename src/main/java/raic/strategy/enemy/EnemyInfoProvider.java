@@ -26,7 +26,7 @@ public class EnemyInfoProvider {
 
     public void update(Point centerPoint) {
         if(Util.delayCheck(Util.GROUP_UPDATE_TIMEOUT, lastUpdate)) {
-            lastUpdate = strategy.world.getTickIndex();
+            lastUpdate = MyStrategy.world.getTickIndex();
 
             forceUpdate(centerPoint);
         }
@@ -68,7 +68,11 @@ public class EnemyInfoProvider {
                 groups.add(group);
             }
         }
-        groups.sort(Comparator.comparingDouble(g -> g.getCenter().sqDist(centerPoint)));
+        groups.sort((g1, g2) -> {
+            if(g1.unitCount < 10 || g2.unitCount < 10)
+                return -Integer.compare(g1.unitCount, g2.unitCount);
+            return Double.compare(g1.getCenter().sqDist(centerPoint), g2.getCenter().sqDist(centerPoint));
+        });
         group = groups.get(0);
     }
 

@@ -4,10 +4,11 @@ import raic.model.Unit;
 import raic.model.Vehicle;
 import raic.model.VehicleType;
 import raic.model.VehicleUpdate;
+import raic.strategy.math.FastMath;
 
 import java.util.Arrays;
 
-import static java.lang.StrictMath.hypot;
+import static raic.strategy.math.FastMath.hypot;
 
 @SuppressWarnings({"AbstractClassWithoutAbstractMethods", "WeakerAccess"})
 public class MyVehicle {
@@ -67,15 +68,15 @@ public class MyVehicle {
         this.selected = veh.isSelected();
         this.groups = veh.getGroups();
 
-        this.lastUpdateTick = this.lastPositionUpdateTick = MyStrategy.MY_STRATEGY.world.getTickIndex();
-        this.enemy = this.playerId != MyStrategy.MY_STRATEGY.player.getId();
+        this.lastUpdateTick = this.lastPositionUpdateTick = MyStrategy.world.getTickIndex();
+        this.enemy = this.playerId != MyStrategy.player.getId();
         this.alive = true;
     }
 
     public void update(VehicleUpdate vehicleUpdate) {
-        this.lastUpdateTick = MyStrategy.MY_STRATEGY.world.getTickIndex();
+        this.lastUpdateTick = MyStrategy.world.getTickIndex();
         if(vehicleUpdate.getX() != this.x || vehicleUpdate.getY() != this.y) 
-            this.lastPositionUpdateTick = MyStrategy.MY_STRATEGY.world.getTickIndex();
+            this.lastPositionUpdateTick = MyStrategy.world.getTickIndex();
         if(vehicleUpdate.getDurability() <= 0) this.alive = false;
 
         this.x = vehicleUpdate.getX();
@@ -93,7 +94,7 @@ public class MyVehicle {
     }
 
     public boolean isMoving() {
-        return lastPositionUpdateTick == MyStrategy.MY_STRATEGY.world.getTickIndex();
+        return lastPositionUpdateTick == MyStrategy.world.getTickIndex();
     }
     
     public double getRadius() {
@@ -193,7 +194,7 @@ public class MyVehicle {
     }
 
     public double getDistanceTo(double x, double y) {
-        return hypot(x - this.x, y - this.y);
+        return FastMath.hypot(x - this.x, y - this.y);
     }
 
     public double getDistanceTo(Unit unit) {

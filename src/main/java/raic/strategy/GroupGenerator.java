@@ -6,7 +6,7 @@ import java.util.*;
 
 public class  GroupGenerator {
 
-    VehicleType allTypes[] = {VehicleType.TANK, VehicleType.IFV, VehicleType.ARRV, VehicleType.FIGHTER, VehicleType.HELICOPTER};
+    public static VehicleType allTypes[] = {VehicleType.TANK, VehicleType.IFV, VehicleType.ARRV, VehicleType.FIGHTER, VehicleType.HELICOPTER};
     VehicleType surfaceTypes[] = {VehicleType.TANK, VehicleType.IFV, VehicleType.ARRV};
     VehicleType skyTypes[] = {VehicleType.FIGHTER, VehicleType.HELICOPTER};
 
@@ -34,12 +34,12 @@ public class  GroupGenerator {
             sky.put(type, point);
         }
 
-        strategy.movementManager.add(new MyMove()
+        MyStrategy.movementManager.add(new MyMove()
                 .clearAndSelect(0, 0, 1024, 1024)
                 .next(new MyMove()
                         .assign(Util.SANDWICH)));
 
-        strategy.movementManager.add(new MyMove()
+        MyStrategy.movementManager.add(new MyMove()
                 .clearAndSelect(surfaceTypes[0])
                 .next(new MyMove()
                         .addToSelection(surfaceTypes[1])
@@ -48,7 +48,7 @@ public class  GroupGenerator {
                                 .next(new MyMove()
                                         .assign(Util.SURFACE)))));
 
-        strategy.movementManager.add(new MyMove()
+        MyStrategy.movementManager.add(new MyMove()
                 .clearAndSelect(skyTypes[0])
                 .next(new MyMove()
                         .addToSelection(skyTypes[1])
@@ -69,7 +69,7 @@ public class  GroupGenerator {
 
         move.last().onApply(() -> strategy.sandwichReady = true);
 
-        strategy.movementManager.add(move);
+        MyStrategy.movementManager.add(move);
     }
 
     private void addUniteMoves(MyMove move) {

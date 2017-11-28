@@ -19,11 +19,11 @@ public final class MyStrategy implements Strategy {
 
     private Random random;
 
-    public Player player;
-    public World world;
-    public Game game;
-    public Move move;
-    public MovementManager movementManager;
+    public static Player player;
+    public static World world;
+    public static Game game;
+    public static Move move;
+    public static MovementManager movementManager;
 
     public Map<VehicleType, Integer> groupByType = new HashMap<>();
 
@@ -32,22 +32,27 @@ public final class MyStrategy implements Strategy {
     public DefaultHashMap<VehicleType, ArrayList<MyVehicle> > vehicleByType = new DefaultHashMap<>(ArrayList::new);
     public DefaultHashMap<Integer, ArrayList<MyVehicle> > vehicleByGroup = new DefaultHashMap<>(ArrayList::new);
 
+    public static TerrainType[][] terrain;
+    public static WeatherType[][] weather;
+
     public MyStrategy() {
         MY_STRATEGY = this;
     }
 
     @Override
-    public void move(Player player, World world, Game game, Move move) {
-        this.player = player;
-        this.world = world;
-        this.game = game;
-        this.move = move;
+    public void move(Player _player, World _world, Game _game, Move _move) {
+        player = _player;
+        world = _world;
+        game = _game;
+        move = _move;
 
         boolean isFirstTick = random == null;
 
         if(isFirstTick) {
             System.out.println(game.getRandomSeed());
             random = new Random(game.getRandomSeed());
+            terrain = world.getTerrainByCellXY();
+            weather = world.getWeatherByCellXY();
             movementManager = new MovementManager(this);
             sandwichController = new SandwichController(this);
             groupByType.put(VehicleType.ARRV, 2);
@@ -55,19 +60,32 @@ public final class MyStrategy implements Strategy {
             groupByType.put(VehicleType.IFV, 4);
             groupByType.put(VehicleType.HELICOPTER, 5);
             groupByType.put(VehicleType.FIGHTER, 6);
-
         }
 
-        //debugRender();
-
         initMove();
+
+        debugRender();
+
         if(isFirstTick) new GroupGenerator(this);
 
         process();
         movementManager.move();
     }
 
+    private void drawInColors() {
+        //TODO: rem start
+        for(MyVehicle veh : vehicles) {
+            if(veh.alive) {
+                int c = 0;
+                for(int i = 0; i < 5; ++i) if(GroupGenerator.allTypes[i] == veh.getType()) c = i;
+                RewindClient.getInstance().circle(veh.getX(), veh.getY(), 2, color[c], 2);
+            }
+        }
+        //TODO: rem end
+    }
+
     private void debugRender() {
+        //TODO: rem start
         RewindClient rc = RewindClient.getInstance();
         for(MyVehicle veh : vehicleById.values()) {
             rc.livingUnit(veh.getX(),
@@ -77,11 +95,12 @@ public final class MyStrategy implements Strategy {
                     veh.getMaxDurability(),
                     (veh.getPlayerId() == player.getId() ? RewindClient.Side.OUR : RewindClient.Side.ENEMY),
                     0,
-                    RewindClient.idByType(veh.getType()),
+                    veh.getType(),
                     0,
                     0,
                     veh.isSelected());
         }
+        //TODO: rem end
     }
 
     private void initMove() {
@@ -113,11 +132,14 @@ public final class MyStrategy implements Strategy {
         if(sandwichReady)
             sandwichController.tick();
 
+        //TODO: rem start
         for(int i = 0; i < sandwichController.provider.groups.size(); ++i) {
             Group group = sandwichController.provider.groups.get(i);
             for(MyVehicle veh : group.vehicles) {
-                //RewindClient.getInstance().circle(veh.getX(), veh.getY(), 2.2, color[i % color.length]);
+                if(veh.alive)
+                    RewindClient.getInstance().circle(veh.getX(), veh.getY(), 2.2, color[i % color.length], 1);
             }
         }
+        //TODO: rem end
     }
 }

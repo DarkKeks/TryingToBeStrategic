@@ -19,6 +19,7 @@ public class Util {
     public static final int SANDWICH_ORIENTATION_DELAY = 300;
     public static final int GROUP_UPDATE_TIMEOUT = 10;
     public static final int ATTACK_MODE_UPDATE_DELAY = 10;
+    public static final int NUKE_RETRY_DELAY = 10;
 
     public static final double SANDWICH_MOVEMENT_SPEED = 0.18;
 
@@ -68,6 +69,36 @@ public class Util {
     }
 
     public static boolean delayCheck(int delay, int last) {
-        return last + delay <= MyStrategy.MY_STRATEGY.world.getTickIndex();
+        return last + delay <= MyStrategy.world.getTickIndex();
     }
+
+    public static double getViewDistance(MyVehicle veh) {
+        double baseDist = veh.getVisionRange();
+        if(veh.isAerial()) {
+            baseDist *= getAirVision(veh.getX(), veh.getY());
+        } else {
+            baseDist *= getSurfaceVision(veh.getX(), veh.getY());
+        }
+        return baseDist;
+    }
+
+    private static double getSurfaceVision(double x, double y) {
+        switch (MyStrategy.terrain[(int)x / 32][(int)y / 32]) {
+            default:
+            case PLAIN: return MyStrategy.game.getPlainTerrainVisionFactor();
+            case FOREST: return MyStrategy.game.getForestTerrainVisionFactor();
+            case SWAMP: return MyStrategy.game.getSwampTerrainVisionFactor();
+        }
+    }
+
+    private static double getAirVision(double x, double y) {
+        switch (MyStrategy.weather[(int)x / 32][(int)y / 32]) {
+            default:
+            case CLEAR: return MyStrategy.game.getClearWeatherVisionFactor();
+            case CLOUD: return MyStrategy.game.getCloudWeatherVisionFactor();
+            case RAIN: return MyStrategy.game.getRainWeatherVisionFactor();
+        }
+    }
+
+
 }

@@ -21,7 +21,7 @@ public class MovementManager {
     }
 
     public boolean canMove() {
-        return delayedMoves.size() > 0 && strategy.player.getRemainingActionCooldownTicks() == 0;
+        return delayedMoves.size() > 0 && MyStrategy.player.getRemainingActionCooldownTicks() == 0;
     }
 
     public void move() {
@@ -34,13 +34,13 @@ public class MovementManager {
                     if(myMove.move.getAction() == ActionType.CLEAR_AND_SELECT)
                         myMove.apply(strategy.lastSelection);
                     
-                    myMove.apply(strategy.move);
+                    myMove.apply(MyStrategy.move);
                     myMove.onApply.run();
 
                     if (myMove.hasNext) {
                         MyMove next = myMove.next;
                         next.addTime = (myMove.delay == 0 ? myMove.addTime : time++);
-                        next.minTick = strategy.world.getTickIndex() + myMove.delay;
+                        next.minTick = MyStrategy.world.getTickIndex() + myMove.delay;
                         delayedMoves.remove(myMove);
                         delayedMoves.add(next);
                     } else {

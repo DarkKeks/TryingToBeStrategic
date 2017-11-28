@@ -33,7 +33,7 @@ public class MyMove {
     public MyMove() {
         this.hash = ID++;
         move.setAction(ActionType.NONE);
-        minTick = MyStrategy.MY_STRATEGY.world.getTickIndex();
+        minTick = MyStrategy.world.getTickIndex();
     }
 
     public MyMove last() {
@@ -44,7 +44,7 @@ public class MyMove {
 
     public boolean canBeApplied() {
         return !applied && condition.test(MyStrategy.MY_STRATEGY) &&
-                minTick <= MyStrategy.MY_STRATEGY.world.getTickIndex();
+                minTick <= MyStrategy.world.getTickIndex();
     }
 
     public MyMove onApply(Runnable onApply) {
@@ -58,8 +58,13 @@ public class MyMove {
     }
 
     public void retry() {
-        if(minTick <= MyStrategy.MY_STRATEGY.world.getTickIndex())
+        if(minTick <= MyStrategy.world.getTickIndex())
             minTick += retryDelay;
+    }
+
+    public MyMove delay(int delay) {
+        this.delay = delay;
+        return this;
     }
 
     public void applyGenerator() {
