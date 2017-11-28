@@ -9,7 +9,7 @@ import java.awt.*;
 
 public class SandwichController {
 
-    private static double SANDWICH_RADIUS = 20;
+    private static double SANDWICH_RADIUS = 70;
     private static double VIEW_COEF = 0.8;
 
     public MyStrategy strategy;
@@ -22,7 +22,7 @@ public class SandwichController {
     public int lastOrientationTick = -Util.SANDWICH_ORIENTATION_DELAY;
     public int lastAttackMoveUpdateTick = -Util.ATTACK_MODE_UPDATE_DELAY;
     public int lastNukeRetry = -Util.NUKE_RETRY_DELAY;
-    public int lastOpponentNuke = -1000;
+    public int lastOpponentNuke = -123123;
 
     private boolean orienting = false;
     private boolean nukeScaling = false;
@@ -35,15 +35,36 @@ public class SandwichController {
     }
 
     public void tick() {
-        if(MyStrategy.world.getTickIndex() == 4520)
-            System.out.println("debug");
         updateCenterPoint();
         provider.update(centerPoint);
         Point attackPoint = provider.getAttackPoint();
+
+        int nukeCd = MyStrategy.world.getOpponentPlayer().getRemainingNuclearStrikeCooldownTicks();
+        int nukeRemainingTicks = Math.min(nukeCd, 1200 - nukeCd);
+
         if(!orienting) {
-            if(!nukeScaling &&
-                    (MyStrategy.world.getOpponentPlayer().getRemainingNuclearStrikeCooldownTicks() > 100 ||
-                            MyStrategy.world.getTickIndex() - lastOpponentNuke > 1200 + 50) &&
+            if(!nukeScaling && MyStrategy.world.getOpponentPlayer().getNextNuclearStrikeTickIndex() != -1) {
+                lastOpponentNuke = MyStrategy.world.getTickIndex();
+                lastNukePoint = new Point(MyStrategy.world.getOpponentPlayer().getNextNuclearStrikeX(),
+                        MyStrategy.world.getOpponentPlayer().getNextNuclearStrikeY());
+                if (lastNukePoint.sqDist(centerPoint) < SANDWICH_RADIUS * SANDWICH_RADIUS) {
+                    selectAndMove(new MyMove()
+                            .scale(lastNukePoint.getX(), lastNukePoint.getY(), 10)
+                            .next(new MyMove()
+                                    .condition(strategy -> MyStrategy.world.getOpponentPlayer().getNextNuclearStrikeTickIndex() == -1)
+                                    .scale(lastNukePoint.getX(), lastNukePoint.getY(), 0.1)
+                                    .next(new MyMove()
+                                            .condition(Util.isGroupMovingCondition(Util.SANDWICH).negate())
+                                            .onApply(() -> nukeScaling = false))));
+                    nukeScaling = true;
+                }
+            } else if(MyStrategy.player.getRemainingNuclearStrikeCooldownTicks() == 0 &&
+                    Util.delayCheck(Util.NUKE_RETRY_DELAY, lastNukeRetry)) {
+                lastNukeRetry = MyStrategy.world.getTickIndex();
+
+                doNuke();
+            } else if(!nukeScaling &&
+                    (nukeRemainingTicks > 70 || MyStrategy.world.getTickIndex() - lastOpponentNuke > 1200 + 50) &&
                     Util.delayCheck(Util.SANDWICH_ORIENTATION_DELAY, lastOrientationTick)) {
                 lastOrientationTick = MyStrategy.world.getTickIndex();
 
@@ -66,26 +87,6 @@ public class SandwichController {
                 }
 
                 selectAndMove(move);
-            } else if(MyStrategy.player.getRemainingNuclearStrikeCooldownTicks() == 0 &&
-                    Util.delayCheck(Util.NUKE_RETRY_DELAY, lastNukeRetry)) {
-                lastNukeRetry = MyStrategy.world.getTickIndex();
-
-                doNuke();
-            } else if(!nukeScaling && MyStrategy.world.getOpponentPlayer().getNextNuclearStrikeTickIndex() != -1) {
-                lastOpponentNuke = MyStrategy.world.getTickIndex();
-                lastNukePoint = new Point(MyStrategy.world.getOpponentPlayer().getNextNuclearStrikeX(),
-                        MyStrategy.world.getOpponentPlayer().getNextNuclearStrikeY());
-                if (lastNukePoint.sqDist(centerPoint) < SANDWICH_RADIUS * SANDWICH_RADIUS) {
-                    selectAndMove(new MyMove()
-                            .scale(lastNukePoint.getX(), lastNukePoint.getY(), 10)
-                            .next(new MyMove()
-                                    .condition(strategy -> MyStrategy.world.getOpponentPlayer().getNextNuclearStrikeTickIndex() == -1)
-                                    .scale(lastNukePoint.getX(), lastNukePoint.getY(), 0.1)
-                                    .next(new MyMove()
-                                            .condition(Util.isGroupMovingCondition(Util.SANDWICH).negate())
-                                            .onApply(() -> nukeScaling = false))));
-                    nukeScaling = true;
-                }
             }
         }
 
