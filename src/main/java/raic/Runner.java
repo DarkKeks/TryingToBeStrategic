@@ -41,7 +41,7 @@ public final class Runner {
                     break;
                 }
 
-                RewindClient.getInstance().message("Step " + playerContext.getWorld().getTickIndex());
+                RewindClient.getInstance().message("Tick " + playerContext.getWorld().getTickIndex() + "\\n");
 
                 Move move = new Move();
                 strategy.move(player, playerContext.getWorld(), game, move);

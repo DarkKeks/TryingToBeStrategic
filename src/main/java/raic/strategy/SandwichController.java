@@ -1,7 +1,6 @@
 package raic.strategy;
 
 import raic.RewindClient;
-import raic.model.VehicleType;
 import raic.strategy.enemy.EnemyInfoProvider;
 import raic.strategy.math.Vec2D;
 
@@ -15,9 +14,11 @@ public class SandwichController {
     public MyStrategy strategy;
     public EnemyInfoProvider provider;
 
+    public Point attackPoint;
     public Point centerPoint;
     public Point lastNukePoint;
     private Vec2D orientation;
+    public boolean goingForFacility;
 
     public int lastOrientationTick = -Util.SANDWICH_ORIENTATION_DELAY;
     public int lastAttackMoveUpdateTick = -Util.ATTACK_MODE_UPDATE_DELAY;
@@ -37,66 +38,102 @@ public class SandwichController {
     public void tick() {
         updateCenterPoint();
         provider.update(centerPoint);
-        Point attackPoint = provider.getAttackPoint();
+        attackPoint = provider.getAttackPoint();
+        goingForFacility = provider.isFacility();
 
-        int nukeCd = MyStrategy.world.getOpponentPlayer().getRemainingNuclearStrikeCooldownTicks();
-        int nukeRemainingTicks = Math.min(nukeCd, 1200 - nukeCd);
 
-        if(!orienting) {
-            if(!nukeScaling && MyStrategy.world.getOpponentPlayer().getNextNuclearStrikeTickIndex() != -1) {
-                lastOpponentNuke = MyStrategy.world.getTickIndex();
-                lastNukePoint = new Point(MyStrategy.world.getOpponentPlayer().getNextNuclearStrikeX(),
-                        MyStrategy.world.getOpponentPlayer().getNextNuclearStrikeY());
-                if (lastNukePoint.sqDist(centerPoint) < SANDWICH_RADIUS * SANDWICH_RADIUS) {
-                    selectAndMove(new MyMove()
-                            .scale(lastNukePoint.getX(), lastNukePoint.getY(), 10)
-                            .next(new MyMove()
-                                    .condition(strategy -> MyStrategy.world.getOpponentPlayer().getNextNuclearStrikeTickIndex() == -1)
-                                    .scale(lastNukePoint.getX(), lastNukePoint.getY(), 0.1)
-                                    .next(new MyMove()
-                                            .condition(Util.isGroupMovingCondition(Util.SANDWICH).negate())
-                                            .onApply(() -> nukeScaling = false))));
-                    nukeScaling = true;
-                }
-            } else if(MyStrategy.player.getRemainingNuclearStrikeCooldownTicks() == 0 &&
-                    Util.delayCheck(Util.NUKE_RETRY_DELAY, lastNukeRetry)) {
-                lastNukeRetry = MyStrategy.world.getTickIndex();
+        if(!orienting && !nukeScaling && MyStrategy.world.getOpponentPlayer().getNextNuclearStrikeTickIndex() != -1) {
+            dodgeNuke();
+        } else if(MyStrategy.player.getRemainingNuclearStrikeCooldownTicks() == 0 &&
+                Util.delayCheck(Util.NUKE_RETRY_DELAY, lastNukeRetry)) {
+            lastNukeRetry = MyStrategy.world.getTickIndex();
 
-                doNuke();
-            } else if(!nukeScaling &&
-                    (nukeRemainingTicks > 70 || MyStrategy.world.getTickIndex() - lastOpponentNuke > 1200 + 50) &&
-                    Util.delayCheck(Util.SANDWICH_ORIENTATION_DELAY, lastOrientationTick)) {
-                lastOrientationTick = MyStrategy.world.getTickIndex();
+            doNuke();
+        } else if(!orienting && !nukeScaling && shouldOrient() &&
+                Util.delayCheck(Util.SANDWICH_ORIENTATION_DELAY, lastOrientationTick)) {
+            lastOrientationTick = MyStrategy.world.getTickIndex();
 
-                orient(attackPoint);
-            } else if(!nukeScaling && Util.delayCheck(Util.ATTACK_MODE_UPDATE_DELAY, lastAttackMoveUpdateTick)) {
-                lastAttackMoveUpdateTick = MyStrategy.world.getTickIndex();
+            orient();
+        } else if(!orienting && !nukeScaling && Util.delayCheck(Util.ATTACK_MODE_UPDATE_DELAY, lastAttackMoveUpdateTick)) {
+            lastAttackMoveUpdateTick = MyStrategy.world.getTickIndex();
 
-                MyMove move;
-                double closestDist = getClosestDist(false);
-                if(closestDist * 2 > MyStrategy.game.getIfvGroundAttackRange()) {
-                    move = new MyMove().move(
-                            attackPoint.getX() - centerPoint.getX(),
-                            attackPoint.getY() - centerPoint.getY(),
-                            Util.SANDWICH_MOVEMENT_SPEED);
-                } else {
-                    move = new MyMove().move(
-                            -(attackPoint.getX() - centerPoint.getX()),
-                            -(attackPoint.getY() - centerPoint.getY()),
-                            Util.SANDWICH_MOVEMENT_SPEED);
-                }
-
-                selectAndMove(move);
+            MyMove move;
+            double closestDist = getClosestDist(false);
+            if(closestDist * 2 > MyStrategy.game.getIfvGroundAttackRange()) {
+                move = new MyMove().move(
+                        attackPoint.getX() - centerPoint.getX(),
+                        attackPoint.getY() - centerPoint.getY(),
+                        Util.SANDWICH_MOVEMENT_SPEED);
+            } else {
+                move = new MyMove().move(
+                        -(attackPoint.getX() - centerPoint.getX()),
+                        -(attackPoint.getY() - centerPoint.getY()),
+                        Util.SANDWICH_MOVEMENT_SPEED);
             }
+
+            selectSandwichAndMove(move);
         }
 
         //TODO: rem start
-        RewindClient.getInstance().message("Nuke in: " + MyStrategy.player.getRemainingNuclearStrikeCooldownTicks());
+        RewindClient.getInstance().line(centerPoint.getX(), centerPoint.getY(), attackPoint.getX(), attackPoint.getY(), Color.BLACK, 1);
+        if(MyStrategy.world.getOpponentPlayer().getNextNuclearStrikeTickIndex() != -1)
+            RewindClient.getInstance().circle(MyStrategy.world.getOpponentPlayer().getNextNuclearStrikeX(),
+                    MyStrategy.world.getOpponentPlayer().getNextNuclearStrikeY(),
+                    50, Color.BLUE, 3);
+        if(MyStrategy.world.getMyPlayer().getNextNuclearStrikeTickIndex() != -1)
+            RewindClient.getInstance().circle(MyStrategy.world.getMyPlayer().getNextNuclearStrikeX(),
+                    MyStrategy.world.getMyPlayer().getNextNuclearStrikeY(),
+                    50, Color.ORANGE, 3);
+        RewindClient.getInstance().message("Nuke in: " + MyStrategy.player.getRemainingNuclearStrikeCooldownTicks() + "\\n");
         RewindClient.getInstance().circle(centerPoint.getX(), centerPoint.getY(), 4, Color.YELLOW, 1);
         RewindClient.getInstance().circle(attackPoint.getX(), attackPoint.getY(), 4, Color.RED, 1);
         //TODO: rem end
     }
 
+    private boolean shouldOrient() {
+        int nukeCooldown = MyStrategy.world.getOpponentPlayer().getRemainingNuclearStrikeCooldownTicks();
+        int timeWithoutNuke = MyStrategy.world.getTickIndex() - lastOpponentNuke;
+        boolean nukeLongAgo = timeWithoutNuke - Util.getOpponentPlayerNuclearStrikeDelay() > 50;
+        boolean nuke = nukeLongAgo || nukeCooldown > 70;
+
+        double angle = orientAngle();
+        boolean needed = angle > 0.1;
+
+        boolean fac = !goingForFacility;
+
+        return nuke && needed && fac;
+    }
+
+    private double orientAngle() {
+        double current = orientation.angle();
+        Vec2D newRot = new Vec2D(attackPoint.getX() - centerPoint.getX(), attackPoint.getY() - centerPoint.getY());
+        double needed = newRot.angle();
+
+        double res = Math.PI * 10;
+        for(int i = -3; i <= 3; ++i)
+            res = Util.absMin(res, needed - current + i * Math.PI);
+        return res;
+    }
+
+
+    private void orient() {
+        orientation = new Vec2D(attackPoint.getX() - centerPoint.getX(), attackPoint.getY() - centerPoint.getY());
+        double res = orientAngle();
+        MyStrategy.movementManager.add(new MyMove()
+                .clearAndSelect(Util.SANDWICH)
+                .next(new MyMove()
+                        .scale(centerPoint.getX(), centerPoint.getY(), 1.1)
+                        .next(new MyMove()
+                                .condition(Util.isGroupMovingCondition(Util.SANDWICH).negate())
+                                .rotate(centerPoint.getX(), centerPoint.getY(), res, 0.0, Util.SANDWICH_MOVEMENT_SPEED)
+                                .next(new MyMove()
+                                        .condition(Util.isGroupMovingCondition(Util.SANDWICH).negate())
+                                        .scale(centerPoint.getX(), centerPoint.getY(), 0.1)
+                                        .next(new MyMove()
+                                                .condition(Util.isGroupMovingCondition(Util.SANDWICH).negate())
+                                                .onApply(() -> this.orienting = false))))));
+        orienting = true;
+    }
 
     private void doNuke() {
         if(getClosestDist(true) > 70) return;
@@ -150,36 +187,26 @@ public class SandwichController {
         }
     }
 
-    private void orient(Point attackPoint) {
-        //TODO: rem start
-        RewindClient.getInstance().line(centerPoint.getX(), centerPoint.getY(), attackPoint.getX(), attackPoint.getY(), Color.BLACK, 1);
-        //TODO: rem end
-
-        double current = orientation.angle();
-        double negCurrent = (current > 0 ? current - Math.PI : current + Math.PI);
-        Vec2D newRot = new Vec2D(attackPoint.getX() - centerPoint.getX(), attackPoint.getY() - centerPoint.getY());
-        double needed = newRot.angle();
-        double res = Util.absMin(needed - current, needed - negCurrent);
-        if(Math.abs(res) < 0.05) return;
-        orientation = newRot;
-        MyStrategy.movementManager.add(new MyMove()
-                .clearAndSelect(Util.SANDWICH)
-                .next(new MyMove()
-                        .scale(centerPoint.getX(), centerPoint.getY(), 1.1)
-                        .next(new MyMove()
-                                .condition(Util.isGroupMovingCondition(Util.SANDWICH).negate())
-                                .rotate(centerPoint.getX(), centerPoint.getY(), res)
-                                .next(new MyMove()
-                                        .condition(Util.isGroupMovingCondition(Util.SANDWICH).negate())
-                                        .scale(centerPoint.getX(), centerPoint.getY(), 0.1)
-                                        .next(new MyMove()
-                                                .condition(Util.isGroupMovingCondition(Util.SANDWICH).negate())
-                                                .onApply(() -> this.orienting = false))))));
-        orienting = true;
+    private void dodgeNuke() {
+        lastOpponentNuke = MyStrategy.world.getTickIndex();
+        lastNukePoint = new Point(MyStrategy.world.getOpponentPlayer().getNextNuclearStrikeX(),
+                MyStrategy.world.getOpponentPlayer().getNextNuclearStrikeY());
+        if (lastNukePoint.sqDist(centerPoint) < SANDWICH_RADIUS * SANDWICH_RADIUS) {
+            selectSandwichAndMove(new MyMove()
+                    .scale(lastNukePoint.getX(), lastNukePoint.getY(), 10)
+                    .next(new MyMove()
+                            .condition(strategy -> MyStrategy.world.getOpponentPlayer().getNextNuclearStrikeTickIndex() == -1)
+                            .scale(lastNukePoint.getX(), lastNukePoint.getY(), 0.1)
+                            .next(new MyMove()
+                                    .condition(Util.isGroupMovingCondition(Util.SANDWICH).negate())
+                                    .onApply(() -> nukeScaling = false))));
+            nukeScaling = true;
+        }
     }
 
     private double getClosestDist(boolean isAerialAllowed) {
         double dist = 1e9;
+        if(provider.getGroup().isFacility()) return dist;
         for(MyVehicle a : strategy.vehicleByGroup.get(Util.SANDWICH)) {
             if(!a.alive || (!isAerialAllowed && a.isAerial())) continue;
             for(MyVehicle b : provider.getGroup().vehicles) {
@@ -193,7 +220,7 @@ public class SandwichController {
         return Math.sqrt(dist);
     }
 
-    private void selectAndMove(MyMove move) {
+    private void selectSandwichAndMove(MyMove move) {
         if(strategy.lastSelection.getGroup() != Util.SANDWICH)
             MyStrategy.movementManager.add(new MyMove()
                     .clearAndSelect(Util.SANDWICH)

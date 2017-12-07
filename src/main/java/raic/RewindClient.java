@@ -12,8 +12,8 @@ public class RewindClient {
 
     private static RewindClient INSTANCE;
 
-    private final Socket socket;
-    private final OutputStream outputStream;
+    private Socket socket;
+    private OutputStream outputStream;
 
     public enum Side {
         OUR(-1),
@@ -36,6 +36,16 @@ public class RewindClient {
 
         AreaType(int areaType) {
             this.areaType = areaType;
+        }
+    }
+
+    public enum FacilityType {
+        CONTROL_CENTER(0),
+        VEHICLE_FACTORY(1);
+        final int facilityType;
+
+        FacilityType(int facilityType) {
+            this.facilityType = facilityType;
         }
     }
 
@@ -71,14 +81,6 @@ public class RewindClient {
         send(String.format("{\"type\": \"area\", \"x\": %d, \"y\": %d, \"area_type\": %d}", cellX, cellY, areaType.areaType));
     }
 
-    void close() {
-        try {
-            outputStream.close();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     /**
      * Pass arbitrary user message to be stored in frame
      * Message content displayed in separate window inside viewer
@@ -89,6 +91,24 @@ public class RewindClient {
     public void message(String msg) {
         String s = "{\"type\": \"message\", \"message\" : \"" + msg + " \"}";
         send(s);
+    }
+
+    /**
+     * Facility - rectangle with texture and progress bars
+     * @param cell_x - x cell of top left facility part
+     * @param cell_y - y cell of top left facility part
+     * @param type - type of facility
+     * @param side - enemy, ally or neutral
+     * @param production - current production progress, set to 0 if no production
+     * @param max_production - maximum production progress, used together with `production`
+     * @param capture - current capture progress, should be in range [-max_capture, max_capture],
+* where negative values mean that facility is capturing by enemy
+     * @param max_capture - maximum capture progress, used together with `capture`
+     */
+
+    public void facility(int cell_x, int cell_y, FacilityType type, Side side, int production, int max_production, int capture, int max_capture) {
+        send(String.format("{\"type\": \"facility\", \"x\": %d, \"y\": %d, \"facility_type\": %d, \"enemy\": %d, \"production\": %d, \"max_production\": %d, \"capture\": %d, \"max_capture\": %d}",
+                cell_x, cell_y, type.facilityType, side.side, production, max_production, capture, max_capture));
     }
 
     /**
@@ -112,14 +132,22 @@ public class RewindClient {
                 x, y, r, hp, maxHp, side.side, idByType(type), course, remCooldown, maxCooldown, selected ? 1 : 0));
     }
 
+    void close() {
+//        try {
+//            outputStream.close();
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        }
+    }
+
     public RewindClient(String host, int port) {
-        try {
-            socket = new Socket(host, port);
-            socket.setTcpNoDelay(true);
-            outputStream = socket.getOutputStream();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+//        try {
+//            socket = new Socket(host, port);
+//            socket.setTcpNoDelay(true);
+//            outputStream = socket.getOutputStream();
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        }
     }
 
     public RewindClient() {
@@ -127,12 +155,12 @@ public class RewindClient {
     }
 
     private void send(String buf) {
-        try {
-            outputStream.write(buf.getBytes());
-            outputStream.flush();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+//        try {
+//            outputStream.write(buf.getBytes());
+//            outputStream.flush();
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        }
     }
 
     public static int idByType(VehicleType type) {

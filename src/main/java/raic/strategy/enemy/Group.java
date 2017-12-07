@@ -1,5 +1,6 @@
 package raic.strategy.enemy;
 
+import raic.model.Facility;
 import raic.model.VehicleType;
 import raic.strategy.MyVehicle;
 import raic.strategy.Point;
@@ -9,6 +10,7 @@ import java.util.EnumMap;
 
 public class Group {
 
+    public Facility facility;
     public Point center;
     public int unitCount;
     public EnumMap<VehicleType, Integer> count;
@@ -20,6 +22,11 @@ public class Group {
         vehicles = new ArrayList<>();
     }
 
+    public Group(Facility facility) {
+        this.facility = facility;
+    }
+
+
     public void add(MyVehicle veh) {
         unitCount++;
         vehicles.add(veh);
@@ -28,16 +35,24 @@ public class Group {
 
     public Point getCenter() {
         if(center == null) {
-            double x, y;
-            int count = 0;
-            x = y = 0;
-            for(MyVehicle veh : vehicles) {
-                x += veh.getX();
-                y += veh.getY();
-                count++;
+            if(!isFacility()) {
+                double x, y;
+                int count = 0;
+                x = y = 0;
+                for (MyVehicle veh : vehicles) {
+                    x += veh.getX();
+                    y += veh.getY();
+                    count++;
+                }
+                center = (count > 0 ? new Point(x / count, y / count) : new Point(0, 0));
+            } else {
+                center = new Point(facility.getLeft() + 32, facility.getTop() + 32);
             }
-            center = (count > 0 ? new Point(x / count, y / count) : new Point(0, 0));
         }
         return center;
+    }
+
+    public boolean isFacility() {
+        return facility != null;
     }
 }

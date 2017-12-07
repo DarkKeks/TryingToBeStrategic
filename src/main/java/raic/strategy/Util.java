@@ -1,5 +1,7 @@
 package raic.strategy;
 
+import raic.model.Facility;
+import raic.model.FacilityType;
 import raic.model.VehicleType;
 
 import java.util.HashMap;
@@ -22,6 +24,8 @@ public class Util {
     public static final int NUKE_RETRY_DELAY = 10;
 
     public static final double SANDWICH_MOVEMENT_SPEED = 0.18;
+
+    public static final double FAC_DIST_THRESHOLD_SQ = 200 * 200;
 
     public static int getIdxByCoord(int coord) {
         switch (coord) {
@@ -100,5 +104,24 @@ public class Util {
         }
     }
 
+    public static int getOpponentPlayerNuclearStrikeDelay() {
+        int count = 0;
+        for(Facility fac : MyStrategy.MY_STRATEGY.facilityById.values())
+            if(fac.getType() == FacilityType.CONTROL_CENTER && fac.getOwnerPlayerId() != MyStrategy.player.getId())
+                count++;
+        return MyStrategy.game.getBaseTacticalNuclearStrikeCooldown() -
+                count * MyStrategy.game.getTacticalNuclearStrikeCooldownDecreasePerControlCenter();
+    }
 
+    public static int getMaxProduction(Facility fac) {
+        if(fac.getVehicleType() != null)
+            switch (fac.getVehicleType()) {
+                case IFV: return MyStrategy.game.getIfvProductionCost();
+                case ARRV: return MyStrategy.game.getArrvProductionCost();
+                case TANK: return MyStrategy.game.getTankProductionCost();
+                case FIGHTER: return MyStrategy.game.getFighterProductionCost();
+                case HELICOPTER: return MyStrategy.game.getHelicopterAerialDamage();
+            }
+        return 0;
+    }
 }

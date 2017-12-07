@@ -32,6 +32,9 @@ public final class MyStrategy implements Strategy {
     public DefaultHashMap<VehicleType, ArrayList<MyVehicle> > vehicleByType = new DefaultHashMap<>(ArrayList::new);
     public DefaultHashMap<Integer, ArrayList<MyVehicle> > vehicleByGroup = new DefaultHashMap<>(ArrayList::new);
 
+    public Map<Long, Facility> facilityById = new HashMap<>();
+    public DefaultHashMap<FacilityType, ArrayList<Facility> > facilityByType = new DefaultHashMap<>(ArrayList::new);
+
     public static TerrainType[][] terrain;
     public static WeatherType[][] weather;
 
@@ -49,7 +52,6 @@ public final class MyStrategy implements Strategy {
         boolean isFirstTick = random == null;
 
         if(isFirstTick) {
-            System.out.println(game.getRandomSeed());
             random = new Random(game.getRandomSeed());
             terrain = world.getTerrainByCellXY();
             weather = world.getWeatherByCellXY();
@@ -63,6 +65,7 @@ public final class MyStrategy implements Strategy {
         }
 
         initMove();
+        initFacilities();
 
         debugRender();
 
@@ -70,6 +73,13 @@ public final class MyStrategy implements Strategy {
 
         process();
         movementManager.move();
+    }
+
+    private void initFacilities() {
+        for(Facility fac : world.getFacilities()) {
+            facilityById.put(fac.getId(), fac);
+            facilityByType.get(fac.getType()).add(fac);
+        }
     }
 
     private void drawInColors() {
@@ -87,6 +97,10 @@ public final class MyStrategy implements Strategy {
     private void debugRender() {
         //TODO: rem start
         RewindClient rc = RewindClient.getInstance();
+
+        rc.message("My Score: " + player.getScore() + "\\n");
+        rc.message("Opponent Score: " + world.getOpponentPlayer().getScore() + "\\n");
+
         for(MyVehicle veh : vehicleById.values()) {
             rc.livingUnit(veh.getX(),
                     veh.getY(),
@@ -99,6 +113,17 @@ public final class MyStrategy implements Strategy {
                     0,
                     0,
                     veh.isSelected());
+        }
+        for(Facility fac : facilityById.values()) {
+            rc.facility((int)Math.round(fac.getLeft() / 32),
+                    (int)Math.round(fac.getTop() / 32),
+                    (fac.getType() == FacilityType.CONTROL_CENTER ? RewindClient.FacilityType.CONTROL_CENTER : RewindClient.FacilityType.VEHICLE_FACTORY),
+                    (fac.getOwnerPlayerId() == -1 ? RewindClient.Side.NEUTRAL :
+                            (fac.getOwnerPlayerId() == player.getId() ? RewindClient.Side.OUR : RewindClient.Side.ENEMY)),
+                    fac.getProductionProgress(),
+                    Util.getMaxProduction(fac),
+                    (int)Math.round(fac.getCapturePoints()),
+                    (int)Math.round(game.getMaxFacilityCapturePoints()));
         }
         //TODO: rem end
     }
@@ -135,9 +160,15 @@ public final class MyStrategy implements Strategy {
         //TODO: rem start
         for(int i = 0; i < sandwichController.provider.groups.size(); ++i) {
             Group group = sandwichController.provider.groups.get(i);
-            for(MyVehicle veh : group.vehicles) {
-                if(veh.alive)
-                    RewindClient.getInstance().circle(veh.getX(), veh.getY(), 2.2, color[i % color.length], 1);
+            if(!group.isFacility()) {
+                RewindClient.getInstance().circle(group.getCenter().getX(), group.getCenter().getY(),
+                        2.2, color[i % color.length], 1);
+            } else {
+                Facility fac = group.facility;
+                Color col = color[i % color.length];
+                RewindClient.getInstance().rect(fac.getLeft() - 1, fac.getTop() - 1,
+                        fac.getLeft() + 65, fac.getTop() + 65,
+                        new Color(col.getRed(), col.getGreen(), col.getBlue(), 50), 1);
             }
         }
         //TODO: rem end

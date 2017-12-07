@@ -1,5 +1,6 @@
 package raic.strategy.enemy;
 
+import raic.model.Facility;
 import raic.strategy.MyStrategy;
 import raic.strategy.MyVehicle;
 import raic.strategy.Point;
@@ -7,7 +8,6 @@ import raic.strategy.Util;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Comparator;
 
 public class EnemyInfoProvider {
 
@@ -16,12 +16,15 @@ public class EnemyInfoProvider {
     private MyStrategy strategy;
     private int lastUpdate = -Util.GROUP_UPDATE_TIMEOUT;
 
+    private Point lastAttackPoint;
+
     public ArrayList<Group> groups;
     public Group group;
 
     public EnemyInfoProvider(MyStrategy strategy) {
         this.strategy = strategy;
         this.groups = new ArrayList<>();
+        this.lastAttackPoint = new Point(0, 0);
     }
 
     public void update(Point centerPoint) {
@@ -68,11 +71,24 @@ public class EnemyInfoProvider {
                 groups.add(group);
             }
         }
+
+        for(Facility fac : strategy.facilityById.values()) {
+            if(fac.getOwnerPlayerId() != MyStrategy.player.getId()) {
+                groups.add(new Group(fac));
+            }
+        }
+
         groups.sort((g1, g2) -> {
-            if(g1.unitCount < 10 || g2.unitCount < 10)
-                return -Integer.compare(g1.unitCount, g2.unitCount);
+            if(g1.isFacility() && !g2.isFacility() && g2.getCenter().sqDist(centerPoint) < Util.FAC_DIST_THRESHOLD_SQ)
+                return 1;
+            if(!g1.isFacility() && g2.isFacility() && g1.getCenter().sqDist(centerPoint) < Util.FAC_DIST_THRESHOLD_SQ)
+                return -1;
+            // if groups are small, skip (cause of xor)
+            if(!g1.isFacility() && !g2.isFacility() && (g1.unitCount < 10 ^ g2.unitCount < 10))
+                return -Integer.compare(g1.unitCount, g2.unitCount); // less is worse, so 9 is worse then 50
             return Double.compare(g1.getCenter().sqDist(centerPoint), g2.getCenter().sqDist(centerPoint));
         });
+
         group = groups.get(0);
     }
 
@@ -84,7 +100,7 @@ public class EnemyInfoProvider {
         return group.getCenter();
     }
 
-    public Point getNukePoint() {
-        return getAttackPoint();
+    public boolean isFacility() {
+        return group.isFacility();
     }
 }
