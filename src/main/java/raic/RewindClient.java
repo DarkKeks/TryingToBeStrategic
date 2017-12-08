@@ -133,21 +133,21 @@ public class RewindClient {
     }
 
     void close() {
-//        try {
-//            outputStream.close();
-//        } catch (IOException e) {
-//            throw new RuntimeException(e);
-//        }
+        try {
+            outputStream.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public RewindClient(String host, int port) {
-//        try {
-//            socket = new Socket(host, port);
-//            socket.setTcpNoDelay(true);
-//            outputStream = socket.getOutputStream();
-//        } catch (IOException e) {
-//            throw new RuntimeException(e);
-//        }
+        try {
+            socket = new Socket(host, port);
+            socket.setTcpNoDelay(true);
+            outputStream = socket.getOutputStream();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public RewindClient() {
@@ -155,12 +155,12 @@ public class RewindClient {
     }
 
     private void send(String buf) {
-//        try {
-//            outputStream.write(buf.getBytes());
-//            outputStream.flush();
-//        } catch (IOException e) {
-//            throw new RuntimeException(e);
-//        }
+        try {
+            outputStream.write(buf.getBytes());
+            outputStream.flush();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static int idByType(VehicleType type) {

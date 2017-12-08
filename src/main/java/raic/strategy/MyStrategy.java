@@ -7,13 +7,18 @@ import raic.strategy.enemy.Group;
 import java.awt.*;
 import java.util.*;
 
+import static raic.model.ActionType.*;
+import static raic.model.ActionType.MOVE;
+
 @SuppressWarnings("WeakerAccess")
 public final class MyStrategy implements Strategy {
 
     public static MyStrategy MY_STRATEGY;
 
     public boolean sandwichReady;
-    public SandwichController sandwichController;
+    public boolean skyReady;
+    public SurfaceController surfaceController;
+    public SkyController skyController;
 
     public Move lastSelection = new Move();
 
@@ -56,7 +61,9 @@ public final class MyStrategy implements Strategy {
             terrain = world.getTerrainByCellXY();
             weather = world.getWeatherByCellXY();
             movementManager = new MovementManager(this);
-            sandwichController = new SandwichController(this);
+            surfaceController = new SurfaceController(this);
+            skyController = new SkyController(this);
+            skyReady = sandwichReady = false;
             groupByType.put(VehicleType.ARRV, 2);
             groupByType.put(VehicleType.TANK, 3);
             groupByType.put(VehicleType.IFV, 4);
@@ -67,18 +74,31 @@ public final class MyStrategy implements Strategy {
         initMove();
         initFacilities();
 
-        debugRender();
+        if(world.getTickIndex() >= 2000) debugRender();
 
         if(isFirstTick) new GroupGenerator(this);
 
         process();
         movementManager.move();
+
+        //TODO: rem start
+        printMove();
+        RewindClient.getInstance().message(String.format("action: %s \\n left: %f \\n top: %f \\n right: %f \\n bottom: %f \\n " +
+                        "x: %f \\n y: %f \\n type: %s \\n group: %d \\n",
+                move.getAction(), move.getLeft(), move.getTop(), move.getRight(), move.getBottom(),
+                move.getX(), move.getY(), move.getVehicleType(), move.getGroup()));
+        //TODO: rem end
     }
 
     private void initFacilities() {
         for(Facility fac : world.getFacilities()) {
             facilityById.put(fac.getId(), fac);
             facilityByType.get(fac.getType()).add(fac);
+
+            if(sandwichReady && fac.getOwnerPlayerId() == player.getId() && fac.getType() == FacilityType.VEHICLE_FACTORY && fac.getVehicleType() != VehicleType.HELICOPTER) {
+                movementManager.add(new MyMove()
+                        .setupProduction(fac.getId(), VehicleType.HELICOPTER));
+            }
         }
     }
 
@@ -155,11 +175,14 @@ public final class MyStrategy implements Strategy {
 
     private void process() {
         if(sandwichReady)
-            sandwichController.tick();
+            surfaceController.tick();
+
+        if(skyReady)
+            skyController.tick();
 
         //TODO: rem start
-        for(int i = 0; i < sandwichController.provider.groups.size(); ++i) {
-            Group group = sandwichController.provider.groups.get(i);
+        for(int i = 0; i < surfaceController.provider.groups.size(); ++i) {
+            Group group = surfaceController.provider.groups.get(i);
             if(!group.isFacility()) {
                 RewindClient.getInstance().circle(group.getCenter().getX(), group.getCenter().getY(),
                         2.2, color[i % color.length], 1);
@@ -172,5 +195,54 @@ public final class MyStrategy implements Strategy {
             }
         }
         //TODO: rem end
+    }
+
+    private void printMove() {
+        if(move.getAction() == null) return;
+        switch (move.getAction()) {
+            case CLEAR_AND_SELECT:
+                System.out.println(world.getTickIndex());
+                System.out.println("CLEAR_AND_SELECT");
+                System.out.println(String.format("    left: %f \n    top: %f \n    right: %f \n    bottom: %f \n    type: %s \n    group: %d",
+                        move.getLeft(), move.getTop(), move.getRight(), move.getBottom(), move.getVehicleType(), move.getGroup()));
+                return;
+            case ADD_TO_SELECTION:
+                System.out.println(world.getTickIndex());
+                System.out.println("ADD_TO_SELECTION");
+                System.out.println(String.format("    left: %f \n    top: %f \n    right: %f \n    bottom: %f \n    type: %s \n    group: %d",
+                        move.getLeft(), move.getTop(), move.getRight(), move.getBottom(), move.getVehicleType(), move.getGroup()));
+                return;
+            case ASSIGN:
+                System.out.println(world.getTickIndex());
+                System.out.println("ASSIGN");
+                System.out.println(String.format("    group: %d",
+                        move.getGroup()));
+                return;
+            case MOVE:
+                System.out.println(world.getTickIndex());
+                System.out.println("MOVE");
+                System.out.println(String.format("    x: %f \n    y: %f \n    speed: %f",
+                        move.getX(), move.getY(), move.getMaxSpeed()));
+                return;
+            case ROTATE:
+                System.out.println(world.getTickIndex());
+                System.out.println("ROTATE");
+                System.out.println(String.format("    x: %f \n    y: %f \n    angle: %f \n    speed: %f \n    angular speed: %f",
+                        move.getX(), move.getY(), move.getAngle(), move.getMaxSpeed(), move.getMaxAngularSpeed()));
+                return;
+            case SCALE:
+                System.out.println(world.getTickIndex());
+                System.out.println("SCALE");
+                System.out.println(String.format("    x: %f \n    y: %f \n    factor: %f",
+                        move.getX(), move.getY(), move.getFactor()));
+                return;
+            case TACTICAL_NUCLEAR_STRIKE:
+                System.out.println(world.getTickIndex());
+                System.out.println("TACTICAL_NUCLEAR_STRIKE");
+                System.out.println(String.format("    x: %f \n    y: %f \n    veh: %d",
+                        move.getX(), move.getY(), (int)move.getVehicleId()));
+                return;
+            default:
+        }
     }
 }

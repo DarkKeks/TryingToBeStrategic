@@ -15,6 +15,7 @@ public class Group {
     public int unitCount;
     public EnumMap<VehicleType, Integer> count;
     public ArrayList<MyVehicle> vehicles;
+    private boolean aerial;
 
     public Group() {
         unitCount = 0;
@@ -54,5 +55,17 @@ public class Group {
 
     public boolean isFacility() {
         return facility != null;
+    }
+
+    public boolean isAerial() {
+        return aerial;
+    }
+
+    public void countUnits() {
+        int count = vehicles.size();
+        int aerialCount = 0;
+        for(MyVehicle veh : vehicles)
+            if(veh.isAerial()) aerialCount++;
+        aerial = (1.333 * aerialCount > count);
     }
 }

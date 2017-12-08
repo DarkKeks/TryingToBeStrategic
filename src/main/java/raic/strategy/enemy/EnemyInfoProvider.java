@@ -8,6 +8,7 @@ import raic.strategy.Util;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Comparator;
 
 public class EnemyInfoProvider {
 
@@ -19,11 +20,14 @@ public class EnemyInfoProvider {
     private Point lastAttackPoint;
 
     public ArrayList<Group> groups;
-    public Group group;
+    public ArrayList<Group> facilities;
+    public Group surfaceGroup, skyGroup;
+    public Group surfaceAttackGroup;
 
     public EnemyInfoProvider(MyStrategy strategy) {
         this.strategy = strategy;
         this.groups = new ArrayList<>();
+        this.facilities = new ArrayList<>();
         this.lastAttackPoint = new Point(0, 0);
     }
 
@@ -37,6 +41,13 @@ public class EnemyInfoProvider {
 
     public void forceUpdate(Point centerPoint) {
         groups.clear();
+        facilities.clear();
+
+        for(Facility fac : strategy.facilityById.values()) {
+            if(fac.getOwnerPlayerId() != MyStrategy.player.getId()) {
+                facilities.add(new Group(fac));
+            }
+        }
 
         ArrayList<MyVehicle> enemy = new ArrayList<>();
         for(MyVehicle veh : strategy.vehicles)
@@ -66,41 +77,61 @@ public class EnemyInfoProvider {
                             }
                         }
                     }
-                }
+               }
 
                 groups.add(group);
             }
         }
 
-        for(Facility fac : strategy.facilityById.values()) {
-            if(fac.getOwnerPlayerId() != MyStrategy.player.getId()) {
-                groups.add(new Group(fac));
-            }
-        }
+        facilities.sort(Comparator.comparingDouble(g -> g.getCenter().sqDist(centerPoint)));
 
+        groups.forEach(Group::countUnits);
+
+        // sufrace sort
         groups.sort((g1, g2) -> {
-            if(g1.isFacility() && !g2.isFacility() && g2.getCenter().sqDist(centerPoint) < Util.FAC_DIST_THRESHOLD_SQ)
-                return 1;
-            if(!g1.isFacility() && g2.isFacility() && g1.getCenter().sqDist(centerPoint) < Util.FAC_DIST_THRESHOLD_SQ)
-                return -1;
-            // if groups are small, skip (cause of xor)
-            if(!g1.isFacility() && !g2.isFacility() && (g1.unitCount < 10 ^ g2.unitCount < 10))
+            // surface is always better
+            if(g1.isAerial() != g2.isAerial())
+                return g1.isAerial() ? 1 : -1;
+            // if both groups are small, skip (cause of xor)
+            if(g1.unitCount < 20 ^ g2.unitCount < 20)
                 return -Integer.compare(g1.unitCount, g2.unitCount); // less is worse, so 9 is worse then 50
             return Double.compare(g1.getCenter().sqDist(centerPoint), g2.getCenter().sqDist(centerPoint));
         });
 
-        group = groups.get(0);
+        surfaceAttackGroup = groups.get(0);
+
+        surfaceGroup = groups.get(0);
+        if(facilities.size() > 0)
+            surfaceGroup = facilities.get(0);
+
+        // sky sort
+        groups.sort((g1, g2) -> {
+            // sky is always better
+            if(g1.isAerial() != g2.isAerial())
+                return g1.isAerial() ? -1 : 1;
+            // if both groups are small, skip (cause of xor)
+            if(g1.unitCount < 20 ^ g2.unitCount < 20)
+                return Integer.compare(g1.unitCount, g2.unitCount); // less is better, so 9 is better then 50
+            return Double.compare(g1.getCenter().sqDist(strategy.skyController.centerPoint),
+                    g2.getCenter().sqDist(strategy.skyController.centerPoint));
+        });
+
+        skyGroup = groups.get(0);
     }
 
-    public Group getGroup() {
-        return group;
+    public Group getSurfaceGroup() {
+        return surfaceGroup;
     }
 
-    public Point getAttackPoint() {
-        return group.getCenter();
+    public Group getSkyGroup() {
+        return skyGroup;
     }
 
     public boolean isFacility() {
-        return group.isFacility();
+        return surfaceGroup.isFacility();
+    }
+
+    public Group getSurfaceAttackGroup() {
+        return surfaceAttackGroup;
     }
 }

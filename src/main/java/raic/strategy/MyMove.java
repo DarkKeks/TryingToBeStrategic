@@ -14,6 +14,8 @@ public class MyMove {
     public int hash;
     public int addTime = 0;
 
+    public boolean RIGHT_NOW = false;
+
     public boolean hasNext;
     public MyMove next;
     public Predicate<MyStrategy> condition = (strategy) -> true;
@@ -49,6 +51,11 @@ public class MyMove {
 
     public MyMove onApply(Runnable onApply) {
         this.onApply = onApply;
+        return this;
+    }
+
+    public MyMove RIGHT_NOW() {
+        RIGHT_NOW = true;
         return this;
     }
 
@@ -242,6 +249,13 @@ public class MyMove {
         move.setX(x);
         move.setY(y);
         move.setVehicleId(vehId);
+        return this;
+    }
+
+    public MyMove setupProduction(long id, VehicleType type) {
+        move.setAction(ActionType.SETUP_VEHICLE_PRODUCTION);
+        move.setFacilityId(id);
+        move.setVehicleType(type);
         return this;
     }
 

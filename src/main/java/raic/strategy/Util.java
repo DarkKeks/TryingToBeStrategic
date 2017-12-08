@@ -13,25 +13,31 @@ public class Util {
 
     public static final int DIST_BETW_GROUPS = 74;
     public static final int CENTER_POINT = 119;
+    public static final int SKY_CENTER_POINT = 267;
 
     public static final int SANDWICH = 1;
-    public static final int SURFACE = 2;
+    public static final int SURFACE = SANDWICH;
     public static final int SKY = 3;
 
     public static final int SANDWICH_ORIENTATION_DELAY = 300;
-    public static final int GROUP_UPDATE_TIMEOUT = 10;
-    public static final int ATTACK_MODE_UPDATE_DELAY = 10;
+    public static final int SKY_ORIENTATION_DELAY = 150;
+    public static final int GROUP_UPDATE_TIMEOUT = 20;
+    public static final int ATTACK_MODE_UPDATE_DELAY = 30;
     public static final int NUKE_RETRY_DELAY = 10;
 
     public static final double SANDWICH_MOVEMENT_SPEED = 0.18;
+    public static final double SANDWICH_ANGLE_SPEED = 0.003;
 
-    public static final double FAC_DIST_THRESHOLD_SQ = 200 * 200;
+    public static final double SKY_MOVEMENT_SPEED = 0.54;
+    public static final double SKY_ANGLE_SPEED = 0.012;
+
 
     public static int getIdxByCoord(int coord) {
         switch (coord) {
             case 18: return 0;
             case 92: return 1;
             case 166: return 2;
+            case 240: return 3;
             default: return -1;
         }
     }
@@ -41,6 +47,7 @@ public class Util {
             case 0: return 18;
             case 1: return 92;
             case 2: return 166;
+            case 3: return 240;
             default: return -1;
         }
     }
