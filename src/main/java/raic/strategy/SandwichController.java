@@ -96,13 +96,15 @@ public class SandwichController {
         RewindClient.getInstance().message("Nuke in: " + MyStrategy.player.getRemainingNuclearStrikeCooldownTicks() + "\\n");
         RewindClient.getInstance().circle(centerPoint.getX(), centerPoint.getY(), 4, Color.YELLOW, 1);
         RewindClient.getInstance().circle(movePoint.getX(), movePoint.getY(), 4, Color.RED, 1);
-        RewindClient.getInstance().circle(orientPoint.getX(), orientPoint.getY(), 4, Color.BLUE, 1);
+        if(orientPoint != null) RewindClient.getInstance().circle(orientPoint.getX(), orientPoint.getY(), 4, Color.BLUE, 1);
         RewindClient.getInstance().line(centerPoint.getX(), centerPoint.getY(),
                 centerPoint.x + 100 * orientation.x, centerPoint.y + 100 * orientation.y, Color.BLACK, 1);
         //TODO: rem end
     }
 
     private boolean shouldOrient() {
+        if(orientPoint == null) return false;
+
         int nukeCooldown = MyStrategy.world.getOpponentPlayer().getRemainingNuclearStrikeCooldownTicks();
         int timeWithoutNuke = MyStrategy.world.getTickIndex() - lastOpponentNuke;
         boolean nukeLongAgo = timeWithoutNuke - Util.getOpponentPlayerNuclearStrikeDelay() > 50;
@@ -141,6 +143,7 @@ public class SandwichController {
 
     private void doNuke() {
         Group group = provider.getAttackGroup();
+        if(group.getCenter() == null) return;
         if(getClosestDist(group, true) > 70) return;
 
         double maxDmg = -1e9;
@@ -282,7 +285,7 @@ public class SandwichController {
     }
 
     public Vec2D getAvoidBorderDirection(Vec2D borderDirection, Vec2D attackDirection) {
-        if(Math.abs(attackDirection.angle() - borderDirection.angle()) > Math.PI / 2)
+        if(getAngle(attackDirection, borderDirection) > Math.PI / 2)
             return attackDirection;
 
         double minAngle = 228;
@@ -291,8 +294,8 @@ public class SandwichController {
             Vec2D vec = new Vec2D(i * Math.PI / 2);
             vec.mul(100);
 
-            double angleToBorder = Math.abs(borderDirection.angle() - vec.angle());
-            double angle = Math.abs(attackDirection.angle() - vec.angle());
+            double angleToBorder = getAngle(borderDirection, vec);
+            double angle = getAngle(attackDirection, vec);
             if(compareDoubleLess(Math.PI / 2, angleToBorder) && angle < minAngle) {
                 minAngle = angle;
                 bestVec = vec;
@@ -303,5 +306,13 @@ public class SandwichController {
 
     public static boolean compareDoubleLess(double a, double b) {
         return a < b + 1e-5;
+    }
+
+    public static double getAngle(Vec2D a, Vec2D b) {
+        double res = 229;
+        for(int i = -3; i <= 3; ++i) {
+            res = Math.min(res, Math.abs((a.angle() + i * Math.PI * 2) - b.angle()));
+        }
+        return res;
     }
 }

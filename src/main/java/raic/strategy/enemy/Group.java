@@ -16,17 +16,28 @@ public class Group {
     public int unitCount;
     public EnumMap<VehicleType, Integer> count;
     public ArrayList<MyVehicle> vehicles;
+    private boolean valid;
 
     public Group() {
+        valid = true;
         unitCount = 0;
         count = new EnumMap<>(VehicleType.class);
         vehicles = new ArrayList<>();
     }
 
     public Group(Facility facility) {
+        valid = true;
         this.facility = facility;
     }
 
+    public Group(Point pt) {
+        valid = true;
+        center = pt;
+    }
+
+    public Group(boolean valid) {
+        this.valid = valid;
+    }
 
     public void add(MyVehicle veh) {
         unitCount++;
@@ -35,6 +46,7 @@ public class Group {
     }
 
     public Point getCenter() {
+        if(!valid) return null;
         if(center == null) {
             if(!isFacility()) {
                 double x, y;
@@ -51,6 +63,10 @@ public class Group {
             }
         }
         return center;
+    }
+
+    public boolean valid() {
+        return valid;
     }
 
     public boolean isFacility() {

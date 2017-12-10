@@ -25,6 +25,9 @@ public class EnemyInfoProvider {
         this.strategy = strategy;
         this.groups = new ArrayList<>();
         this.facilities = new ArrayList<>();
+        this.moveGroup = new Group(new Point(512, 512));
+        this.orientGroup = new Group(false);
+        this.attackGroup = new Group(false);
     }
 
     public void update(Point centerPoint) {
@@ -39,32 +42,32 @@ public class EnemyInfoProvider {
         groups.clear();
         facilities.clear();
 
-        for(Facility fac : strategy.facilityById.values()) {
-            if(fac.getOwnerPlayerId() != MyStrategy.player.getId()) {
+        for (Facility fac : strategy.facilityById.values()) {
+            if (fac.getOwnerPlayerId() != MyStrategy.player.getId()) {
                 facilities.add(new Group(fac));
             }
         }
 
         ArrayList<MyVehicle> enemy = new ArrayList<>();
-        for(MyVehicle veh : strategy.vehicles)
-            if(veh.alive && veh.enemy) enemy.add(veh);
+        for (MyVehicle veh : strategy.vehicles)
+            if (veh.alive && veh.enemy) enemy.add(veh);
 
         int n = enemy.size();
         boolean[] used = new boolean[n];
 
         ArrayDeque<MyVehicle> q = new ArrayDeque<>();
-        for(int i = 0; i < n; ++i) {
-            if(!used[i]) {
+        for (int i = 0; i < n; ++i) {
+            if (!used[i]) {
                 used[i] = true;
                 Group group = new Group();
 
                 q.add(enemy.get(i));
-                while(q.size() > 0) {
+                while (q.size() > 0) {
                     MyVehicle cur = q.poll();
                     group.add(cur);
 
-                    for(int j = 0; j < n; ++j) {
-                        if(!used[j]) {
+                    for (int j = 0; j < n; ++j) {
+                        if (!used[j]) {
                             MyVehicle target = enemy.get(j);
                             if (cur.getSquaredDistanceTo(target.getX(), target.getY()) <=
                                     CLUSTER_MIN_DISTANCE * CLUSTER_MIN_DISTANCE) {
@@ -84,35 +87,35 @@ public class EnemyInfoProvider {
         facilities.sort(Comparator.comparingDouble(g -> g.getCenter().sqDist(centerPoint)));
 
         groups.sort((g1, g2) -> {
-            if(g1.isAerial() != g2.isAerial())
+            if (g1.isAerial() != g2.isAerial())
                 return (g2.isAerial() ? -1 : 1);
             return Double.compare(g1.getCenter().sqDist(centerPoint), g2.getCenter().sqDist(centerPoint));
         });
 
-        orientGroup = groups.get(0);
+        if(groups.size() > 0)
+            orientGroup = groups.get(0);
 
         groups.sort((g1, g2) -> {
             // if both groups are small, skip (cause of xor)
-            if(!g1.isFacility() && !g2.isFacility() && (g1.unitCount < 20 ^ g2.unitCount < 20))
+            if (!g1.isFacility() && !g2.isFacility() && (g1.unitCount < 20 ^ g2.unitCount < 20))
                 return -Integer.compare(g1.unitCount, g2.unitCount); // less is worse, so 9 is worse then 50
             return Double.compare(g1.getCenter().sqDist(centerPoint), g2.getCenter().sqDist(centerPoint));
         });
 
-        attackGroup = groups.get(0);
+        if(groups.size() > 0) {
+            attackGroup = groups.get(0);
+            moveGroup = groups.get(0);
+        }
 
-        moveGroup = groups.get(0);
-        if(facilities.size() > 0 &&
-                (moveGroup.getCenter().sqDist(centerPoint) > facilities.get(0).getCenter().sqDist(centerPoint) ||
+        if (facilities.size() > 0 &&
+                (groups.size() == 0 ||
+                        moveGroup.getCenter().sqDist(centerPoint) > facilities.get(0).getCenter().sqDist(centerPoint) ||
                         (2 * moveGroup.getCenter().sqDist(centerPoint) > facilities.get(0).getCenter().sqDist(centerPoint) &&
                                 moveGroup.unitCount < 100 && !moveGroup.isAerial())))
             moveGroup = facilities.get(0);
 
-        if(!moveGroup.isFacility())
+        if (!moveGroup.isFacility())
             orientGroup = moveGroup;
-    }
-
-    public boolean isFacility() {
-        return moveGroup.isFacility();
     }
 
     public Group getMoveGroup() {

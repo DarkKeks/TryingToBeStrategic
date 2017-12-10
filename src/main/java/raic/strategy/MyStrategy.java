@@ -67,7 +67,7 @@ public final class MyStrategy implements Strategy {
         initMove();
         initFacilities();
 
-        if(world.getTickIndex() >= 4000) debugRender();
+        debugRender();
 
         if(isFirstTick) new GroupGenerator(this);
 
