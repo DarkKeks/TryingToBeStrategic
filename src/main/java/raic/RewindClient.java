@@ -160,7 +160,7 @@ public class RewindClient {
 //            outputStream.flush();
 //        } catch (IOException e) {
 //            throw new RuntimeException(e);
-//        }
+        }
     }
 
     public static int idByType(VehicleType type) {

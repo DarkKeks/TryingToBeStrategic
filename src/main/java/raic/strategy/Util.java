@@ -24,6 +24,7 @@ public class Util {
     public static final int NUKE_RETRY_DELAY = 10;
 
     public static final double SANDWICH_MOVEMENT_SPEED = 0.18;
+    public static final double SANDWICH_ANGLE_SPEED = 0.003;
 
     public static final double FAC_DIST_THRESHOLD_SQ = 200 * 200;
 

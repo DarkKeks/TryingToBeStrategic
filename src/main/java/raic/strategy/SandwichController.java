@@ -15,9 +15,11 @@ public class SandwichController {
     public EnemyInfoProvider provider;
 
     public Point attackPoint;
+    public Point orientPoint;
     public Point centerPoint;
     public Point lastNukePoint;
     private Vec2D orientation;
+    private double rotationAngle;
     public boolean goingForFacility;
 
     public int lastOrientationTick = -Util.SANDWICH_ORIENTATION_DELAY;
@@ -32,6 +34,7 @@ public class SandwichController {
         this.strategy = strategy;
         this.provider = new EnemyInfoProvider(strategy);
         this.centerPoint = new Point(119, 119);
+        this.orientPoint = new Point(0, 0);
         this.orientation = new Vec2D(1, 0);
     }
 
@@ -39,10 +42,15 @@ public class SandwichController {
         updateCenterPoint();
         provider.update(centerPoint);
         attackPoint = provider.getAttackPoint();
+        orientPoint = provider.getOrientPoint();
         goingForFacility = provider.isFacility();
 
+        if(orienting) {
+            orientation.rotate(new Vec2D(Util.SANDWICH_ANGLE_SPEED * Math.signum(rotationAngle)));
+        }
 
-        if(!orienting && !nukeScaling && MyStrategy.world.getOpponentPlayer().getNextNuclearStrikeTickIndex() != -1) {
+        if(!nukeScaling && MyStrategy.world.getOpponentPlayer().getNextNuclearStrikeTickIndex() != -1) {
+
             dodgeNuke();
         } else if(MyStrategy.player.getRemainingNuclearStrikeCooldownTicks() == 0 &&
                 Util.delayCheck(Util.NUKE_RETRY_DELAY, lastNukeRetry)) {
@@ -58,18 +66,20 @@ public class SandwichController {
             lastAttackMoveUpdateTick = MyStrategy.world.getTickIndex();
 
             MyMove move;
-            double closestDist = getClosestDist(false);
-            if(closestDist * 2 > MyStrategy.game.getIfvGroundAttackRange()) {
-                move = new MyMove().move(
-                        attackPoint.getX() - centerPoint.getX(),
-                        attackPoint.getY() - centerPoint.getY(),
-                        Util.SANDWICH_MOVEMENT_SPEED);
-            } else {
-                move = new MyMove().move(
-                        -(attackPoint.getX() - centerPoint.getX()),
-                        -(attackPoint.getY() - centerPoint.getY()),
-                        Util.SANDWICH_MOVEMENT_SPEED);
+            Vec2D attackVec = new Vec2D(attackPoint.getX() - centerPoint.getX(),
+                    attackPoint.getY() - centerPoint.getY());
+
+            double borderDist = getDistToBorder(true);
+            if(borderDist < MyStrategy.game.getIfvGroundAttackRange()) {
+                attackVec = getBestMoveDirection(attackVec);
             }
+
+            double closestDist = getClosestDist(false);
+            if (closestDist * 2 < MyStrategy.game.getIfvGroundAttackRange()) {
+                attackVec.mul(-1);
+            }
+
+            move = new MyMove().move(attackVec.x, attackVec.y, Util.SANDWICH_MOVEMENT_SPEED);
 
             selectSandwichAndMove(move);
         }
@@ -96,8 +106,8 @@ public class SandwichController {
         boolean nukeLongAgo = timeWithoutNuke - Util.getOpponentPlayerNuclearStrikeDelay() > 50;
         boolean nuke = nukeLongAgo || nukeCooldown > 70;
 
-        double angle = orientAngle();
-        boolean needed = angle > 0.1;
+        rotationAngle = orientAngle();
+        boolean needed = Math.abs(rotationAngle) > 0.1;
 
         boolean fac = !goingForFacility;
 
@@ -117,25 +127,19 @@ public class SandwichController {
 
 
     private void orient() {
-        orientation = new Vec2D(attackPoint.getX() - centerPoint.getX(), attackPoint.getY() - centerPoint.getY());
-        double res = orientAngle();
         MyStrategy.movementManager.add(new MyMove()
                 .clearAndSelect(Util.SANDWICH)
                 .next(new MyMove()
-                        .scale(centerPoint.getX(), centerPoint.getY(), 1.1)
-                        .next(new MyMove()
-                                .condition(Util.isGroupMovingCondition(Util.SANDWICH).negate())
-                                .rotate(centerPoint.getX(), centerPoint.getY(), res, 0.0, Util.SANDWICH_MOVEMENT_SPEED)
-                                .next(new MyMove()
-                                        .condition(Util.isGroupMovingCondition(Util.SANDWICH).negate())
-                                        .scale(centerPoint.getX(), centerPoint.getY(), 0.1)
-                                        .next(new MyMove()
-                                                .condition(Util.isGroupMovingCondition(Util.SANDWICH).negate())
-                                                .onApply(() -> this.orienting = false))))));
+                    .rotate(centerPoint.getX(), centerPoint.getY(), rotationAngle, 0.0, Util.SANDWICH_ANGLE_SPEED)
+                    .next(new MyMove()
+                            .condition(Util.isGroupMovingCondition(Util.SANDWICH).negate())
+                            .onApply(() -> this.orienting = false))));
         orienting = true;
     }
 
     private void doNuke() {
+        // TODO: chose closest enemy
+        if(provider.getGroup().isFacility()) return;
         if(getClosestDist(true) > 70) return;
 
         double maxDmg = -1e9;
@@ -188,6 +192,7 @@ public class SandwichController {
     }
 
     private void dodgeNuke() {
+        orienting = false;
         lastOpponentNuke = MyStrategy.world.getTickIndex();
         lastNukePoint = new Point(MyStrategy.world.getOpponentPlayer().getNextNuclearStrikeX(),
                 MyStrategy.world.getOpponentPlayer().getNextNuclearStrikeY());
@@ -204,9 +209,24 @@ public class SandwichController {
         }
     }
 
+    private double getDistToBorder(boolean isAerialAllowed) {
+        double distToBorder = 1e9;
+        for(MyVehicle veh : strategy.vehicleByGroup.get(Util.SANDWICH)) {
+            if(veh.alive && (!isAerialAllowed && veh.isAerial())) continue;
+            distToBorder = Math.min(distToBorder, veh.x);
+            distToBorder = Math.min(distToBorder, veh.y);
+            distToBorder = Math.min(distToBorder, 1024 - veh.x);
+            distToBorder = Math.min(distToBorder, 1024 - veh.y);
+        }
+        return distToBorder;
+    }
+
     private double getClosestDist(boolean isAerialAllowed) {
         double dist = 1e9;
-        if(provider.getGroup().isFacility()) return dist;
+
+        if(provider.getGroup().isFacility())
+            return dist;
+
         for(MyVehicle a : strategy.vehicleByGroup.get(Util.SANDWICH)) {
             if(!a.alive || (!isAerialAllowed && a.isAerial())) continue;
             for(MyVehicle b : provider.getGroup().vehicles) {
@@ -217,6 +237,7 @@ public class SandwichController {
                 }
             }
         }
+
         return Math.sqrt(dist);
     }
 
@@ -241,5 +262,57 @@ public class SandwichController {
         if(count > 0)
             centerPoint.set(x / count, y / count);
         else centerPoint.set(0, 0);
+    }
+
+    public Vec2D getVecToBorder() {
+        double distToBorder = 1e9;
+        Vec2D vec = null;
+
+        int dx[] = new int[]{-1024, 1024, 0,    0};
+        int dy[] = new int[]{0,     0,    1024, -1024};
+        int c[]  = new int[]{0,     1024, 1024, 0};
+
+        for(int i = 0; i < 4; ++i) {
+            for(MyVehicle veh : strategy.vehicleByGroup.get(group)) {
+                if(veh.alive) continue;
+                double newX = veh.getX() + dx[i];
+                double newY = veh.getY() + dy[i];
+                double dist = 0;
+                if(newX < 0 || newX > 1024)
+                    dist = Math.abs(c[i] - veh.getX());
+                if(newY < 0 || newY > 1024)
+                    dist = Math.abs(c[i] - veh.getY());
+                if(dist != 0 && dist < distToBorder) {
+                    distToBorder = dist;
+                    vec = new Vec2D(dx[i], dy[i]);
+                }
+            }
+        }
+        if(vec == null) return new Vec2D();
+        return vec.length(distToBorder);
+    }
+
+    public Vec2D getAvoidBorderDirection(Vec2D borderDirection, Vec2D attackDirection) {
+        if(Math.abs(attackDirection.angle() - borderDirection.angle()) > Math.PI / 2)
+            return attackDirection;
+
+        double minAngle = 228;
+        Vec2D bestVec = null;
+        for(int i = 0; i < 4; ++i) {
+            Vec2D vec = new Vec2D(i * Math.PI / 2);
+            vec.mul(100);
+
+            double angleToBorder = Math.abs(borderDirection.angle() - vec.angle());
+            double angle = Math.abs(attackDirection.angle() - vec.angle());
+            if(compareDoubleLess(Math.PI / 2, angleToBorder) && angle < minAngle) {
+                minAngle = angle;
+                bestVec = vec;
+            }
+        }
+        return bestVec;
+    }
+
+    public static boolean compareDoubleLess(double a, double b) {
+        return a < b + 1e-5;
     }
 }

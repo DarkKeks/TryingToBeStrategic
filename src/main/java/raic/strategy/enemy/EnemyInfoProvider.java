@@ -19,11 +19,13 @@ public class EnemyInfoProvider {
     private Point lastAttackPoint;
 
     public ArrayList<Group> groups;
+    public ArrayList<Group> facilities;
     public Group group;
 
     public EnemyInfoProvider(MyStrategy strategy) {
         this.strategy = strategy;
         this.groups = new ArrayList<>();
+        this.facilities = new ArrayList<>();
         this.lastAttackPoint = new Point(0, 0);
     }
 
@@ -37,6 +39,13 @@ public class EnemyInfoProvider {
 
     public void forceUpdate(Point centerPoint) {
         groups.clear();
+        facilities.clear();
+
+        for(Facility fac : strategy.facilityById.values()) {
+            if(fac.getOwnerPlayerId() != MyStrategy.player.getId()) {
+                facilities.add(new Group(fac));
+            }
+        }
 
         ArrayList<MyVehicle> enemy = new ArrayList<>();
         for(MyVehicle veh : strategy.vehicles)
@@ -72,17 +81,9 @@ public class EnemyInfoProvider {
             }
         }
 
-        for(Facility fac : strategy.facilityById.values()) {
-            if(fac.getOwnerPlayerId() != MyStrategy.player.getId()) {
-                groups.add(new Group(fac));
-            }
-        }
+        facilities.sort(Comparator.comparingDouble(g -> g.getCenter().sqDist(centerPoint)));
 
         groups.sort((g1, g2) -> {
-            if(g1.isFacility() && !g2.isFacility() && g2.getCenter().sqDist(centerPoint) < Util.FAC_DIST_THRESHOLD_SQ)
-                return 1;
-            if(!g1.isFacility() && g2.isFacility() && g1.getCenter().sqDist(centerPoint) < Util.FAC_DIST_THRESHOLD_SQ)
-                return -1;
             // if groups are small, skip (cause of xor)
             if(!g1.isFacility() && !g2.isFacility() && (g1.unitCount < 10 ^ g2.unitCount < 10))
                 return -Integer.compare(g1.unitCount, g2.unitCount); // less is worse, so 9 is worse then 50
@@ -90,6 +91,10 @@ public class EnemyInfoProvider {
         });
 
         group = groups.get(0);
+        if(facilities.size() > 0 &&
+                !(groups.get(0).getCenter().sqDist(centerPoint) < Util.FAC_DIST_THRESHOLD_SQ) &&
+                facilities.get(0).getCenter().sqDist(centerPoint) < group.getCenter().sqDist(centerPoint))
+            group = facilities.get(0);
     }
 
     public Group getGroup() {
