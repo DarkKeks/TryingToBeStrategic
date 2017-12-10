@@ -8,6 +8,7 @@ import raic.strategy.Util;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Comparator;
 
 public class EnemyInfoProvider {
 
@@ -16,17 +17,14 @@ public class EnemyInfoProvider {
     private MyStrategy strategy;
     private int lastUpdate = -Util.GROUP_UPDATE_TIMEOUT;
 
-    private Point lastAttackPoint;
-
     public ArrayList<Group> groups;
     public ArrayList<Group> facilities;
-    public Group group;
+    public Group moveGroup, attackGroup, orientGroup;
 
     public EnemyInfoProvider(MyStrategy strategy) {
         this.strategy = strategy;
         this.groups = new ArrayList<>();
         this.facilities = new ArrayList<>();
-        this.lastAttackPoint = new Point(0, 0);
     }
 
     public void update(Point centerPoint) {
@@ -81,31 +79,51 @@ public class EnemyInfoProvider {
             }
         }
 
+        groups.forEach(Group::countUnits);
+
         facilities.sort(Comparator.comparingDouble(g -> g.getCenter().sqDist(centerPoint)));
 
         groups.sort((g1, g2) -> {
-            // if groups are small, skip (cause of xor)
-            if(!g1.isFacility() && !g2.isFacility() && (g1.unitCount < 10 ^ g2.unitCount < 10))
+            if(g1.isAerial() != g2.isAerial())
+                return (g2.isAerial() ? -1 : 1);
+            return Double.compare(g1.getCenter().sqDist(centerPoint), g2.getCenter().sqDist(centerPoint));
+        });
+
+        orientGroup = groups.get(0);
+
+        groups.sort((g1, g2) -> {
+            // if both groups are small, skip (cause of xor)
+            if(!g1.isFacility() && !g2.isFacility() && (g1.unitCount < 20 ^ g2.unitCount < 20))
                 return -Integer.compare(g1.unitCount, g2.unitCount); // less is worse, so 9 is worse then 50
             return Double.compare(g1.getCenter().sqDist(centerPoint), g2.getCenter().sqDist(centerPoint));
         });
 
-        group = groups.get(0);
+        attackGroup = groups.get(0);
+
+        moveGroup = groups.get(0);
         if(facilities.size() > 0 &&
-                !(groups.get(0).getCenter().sqDist(centerPoint) < Util.FAC_DIST_THRESHOLD_SQ) &&
-                facilities.get(0).getCenter().sqDist(centerPoint) < group.getCenter().sqDist(centerPoint))
-            group = facilities.get(0);
-    }
+                (moveGroup.getCenter().sqDist(centerPoint) > facilities.get(0).getCenter().sqDist(centerPoint) ||
+                        (2 * moveGroup.getCenter().sqDist(centerPoint) > facilities.get(0).getCenter().sqDist(centerPoint) &&
+                                moveGroup.unitCount < 100 && !moveGroup.isAerial())))
+            moveGroup = facilities.get(0);
 
-    public Group getGroup() {
-        return group;
-    }
-
-    public Point getAttackPoint() {
-        return group.getCenter();
+        if(!moveGroup.isFacility())
+            orientGroup = moveGroup;
     }
 
     public boolean isFacility() {
-        return group.isFacility();
+        return moveGroup.isFacility();
+    }
+
+    public Group getMoveGroup() {
+        return moveGroup;
+    }
+
+    public Group getOrientGroup() {
+        return orientGroup;
+    }
+
+    public Group getAttackGroup() {
+        return attackGroup;
     }
 }

@@ -122,7 +122,9 @@ public class Vec2D {
     }
 
     public double angle() {
-        return atan2(y, x);
+        double res = atan2(y, x);
+        if(res < 0) res += 2 * Math.PI;
+        return res;
     }
 
     public boolean nearlyEqual(Vec2D potentialIntersectionPoint, double epsilon) {

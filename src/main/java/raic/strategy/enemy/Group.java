@@ -11,6 +11,7 @@ import java.util.EnumMap;
 public class Group {
 
     public Facility facility;
+    private boolean aerial;
     public Point center;
     public int unitCount;
     public EnumMap<VehicleType, Integer> count;
@@ -54,5 +55,17 @@ public class Group {
 
     public boolean isFacility() {
         return facility != null;
+    }
+
+    public boolean isAerial() {
+        return aerial;
+    }
+
+    public void countUnits() {
+        int count = vehicles.size();
+        int aerialCount = 0;
+        for(MyVehicle veh : vehicles)
+            if(veh.isAerial()) aerialCount++;
+        aerial = (1.333 * aerialCount > count);
     }
 }
